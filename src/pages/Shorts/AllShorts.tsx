@@ -94,7 +94,7 @@ export default function ShortsAll() {
   };
 
   const handleAddNew = () => {
-    navigate("/shorts/add");
+    navigate("/shorts/add-shorts");
   };
 
   const handlePreview = (id: number) => {
