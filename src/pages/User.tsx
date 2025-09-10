@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Users, Shield, ShieldCheck, Calendar, CreditCard, Phone, Mail, Ban, UserCheck, Search, Filter, MoreVertical } from "lucide-react";
+import { Users, Shield, ShieldCheck, CreditCard, Phone, Mail, Ban, UserCheck, Search, Filter, MoreVertical } from "lucide-react";
+import { useState } from "react";
 
 interface User {
   id: number;

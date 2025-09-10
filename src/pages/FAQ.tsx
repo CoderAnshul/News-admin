@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
 import { Plus, Edit2, Trash2, ChevronDown, ChevronUp, Save, X, HelpCircle } from 'lucide-react';
+import { useState } from 'react';
 
 interface FaqItem {
     id: number;

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Plus, X, Check, Star, Zap } from "lucide-react";
+import { Plus, X, Check, Zap } from "lucide-react";
 
 interface Plan {
   id: number;
