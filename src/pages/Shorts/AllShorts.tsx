@@ -297,7 +297,7 @@ export default function ShortsAll() {
 
   return (
     <div className="min-h-screen py-8">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-full mx-auto">
         {/* Header */}
         <div className="bg-white rounded-xl  border border-gray-100 overflow-hidden mb-8">
           <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-6">

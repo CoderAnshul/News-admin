@@ -95,7 +95,7 @@ export default function Locations() {
 
   return (
     <div className="bg-gray-50 min-h-screen dark:bg-gray-900">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-full mx-auto">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
           <div>
