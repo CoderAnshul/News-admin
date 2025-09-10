@@ -1,5 +1,5 @@
-import React, { useState, ChangeEvent, FormEvent } from "react";
 import { Plus, Trash2, Edit3, Search, MapPin, Globe } from "lucide-react";
+import { useState, FormEvent } from "react";
 
 interface Location {
   id: number;

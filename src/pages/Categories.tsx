@@ -1,5 +1,5 @@
-import React, { useState, ChangeEvent, FormEvent } from "react";
 import { Plus, Trash2, Edit3, Search } from "lucide-react";
+import { useState, FormEvent } from "react";
 
 interface Category {
   id: number;

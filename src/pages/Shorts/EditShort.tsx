@@ -1,5 +1,5 @@
 import { useState, useRef, ChangeEvent, FormEvent } from "react";
-import { Plus, X, Link as LinkIcon, Play, Pause, Eye, Upload, ArrowLeft, Save } from 'lucide-react';
+import { Plus, X, Link as LinkIcon, Play, Pause, Eye, Upload, Save } from 'lucide-react';
 
 interface ShortLink {
   url: string;

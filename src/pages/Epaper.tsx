@@ -1,5 +1,5 @@
 import React, { useState, ChangeEvent } from "react";
-import { Upload, FileText, Plus, X, Save, Calendar, MapPin, Globe, Eye, Edit, Trash2, Download, Search, ZoomIn, ZoomOut, RotateCw } from "lucide-react";
+import { Upload, FileText, Plus, X, Save, Calendar, MapPin, Globe, Eye, Edit, Trash2, Search, ZoomIn, ZoomOut, RotateCw } from "lucide-react";
 
 interface Page {
   pageNumber: number;
@@ -530,7 +530,7 @@ export default function Epaper() {
                             .map(page => (
                             <div key={page.pageNumber} className="relative bg-white rounded-lg shadow-md overflow-hidden">
                               <img
-                                src={page.image}
+                                src={page.image ?? undefined}
                                 alt={`Page ${page.pageNumber}`}
                                 className="w-full h-24 object-cover cursor-pointer"
                                 onClick={() => openImageModal(page.image!, `Page ${page.pageNumber}`)}
@@ -572,7 +572,7 @@ export default function Epaper() {
                 {epaper.pages && epaper.pages.length > 0 ? (
                   <>
                     <img
-                      src={epaper.pages[0].image}
+                      src={epaper.pages[0].image ?? undefined}
                       alt={`${epaper.title} preview`}
                       className="max-h-full max-w-full object-contain cursor-pointer"
                       onClick={() => openImageModal(epaper.pages[0].image!, `${epaper.title} - Page 1`)}

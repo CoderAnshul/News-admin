@@ -1,5 +1,5 @@
-import React, { useState, ChangeEvent, FormEvent } from "react";
 import { Upload, Link as LinkIcon, Type, Eye, Save, ImageIcon, X } from "lucide-react";
+import { useState, ChangeEvent, FormEvent } from "react";
 
 interface AdFormData {
   title: string;

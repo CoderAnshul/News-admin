@@ -1,5 +1,5 @@
 import React, { useState, ChangeEvent } from "react";
-import { Plus, Edit, Trash2, Eye, Search, Filter, Calendar, User, Tag, FileText, Upload, X, Save } from "lucide-react";
+import { Plus, Edit, Trash2, Search, Calendar, User, Tag, FileText, Upload, X, Save } from "lucide-react";
 
 interface News {
   id: number;
