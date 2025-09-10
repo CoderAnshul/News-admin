@@ -27,6 +27,9 @@ import AddAds from "./pages/Ads/AddAds";
 import AllNews from "./pages/News/AllNews";
 import Epaper from "./pages/Epaper";
 import PushNotifications from "./pages/PushNotifications";
+import FAQ from "./pages/FAQ"; // Import the FAQ component
+import UserPage from "./pages/User";
+import SubscriptionPlan from "./pages/SubscriptionPlan";
 
 export default function App() {
   return (
@@ -79,6 +82,15 @@ export default function App() {
 
             {/* Push Notifications */}
             <Route path="/notifications" element={<PushNotifications />} />
+
+            {/* FAQ Page */}
+            <Route path="/faq" element={<FAQ />} />
+
+            {/* User Page */}
+            <Route path="/users" element={<UserPage />} />
+
+            {/* Subscription Plans */}
+            <Route path="/subscription-plans" element={<SubscriptionPlan />} />
           </Route>
 
           {/* Auth Layout */}

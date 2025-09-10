@@ -39,6 +39,9 @@ export default function AllNews() {
     image: null
   });
 
+  const [headingColor, setHeadingColor] = useState<string>("");
+  const [headingRest, setHeadingRest] = useState<string>("");
+
   const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -83,6 +86,8 @@ export default function AllNews() {
     });
     setShowAddForm(false);
     setEditingNews(null);
+    setHeadingColor("");
+    setHeadingRest("");
   };
 
   const handleEdit = (news: News) => {
@@ -194,6 +199,40 @@ export default function AllNews() {
                 </div>
 
                 <div className="space-y-6 ">
+                  {/* Heading Inputs */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="flex items-center text-sm font-semibold text-gray-700 mb-2">
+                        Colored Heading (first words)
+                      </label>
+                      <input
+                        type="text"
+                        value={headingColor}
+                        onChange={e => setHeadingColor(e.target.value)}
+                        placeholder="Enter colored heading..."
+                        className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors"
+                      />
+                    </div>
+                    <div>
+                      <label className="flex items-center text-sm font-semibold text-gray-700 mb-2">
+                        Rest of Heading
+                      </label>
+                      <input
+                        type="text"
+                        value={headingRest}
+                        onChange={e => setHeadingRest(e.target.value)}
+                        placeholder="Enter rest of heading..."
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors"
+                      />
+                    </div>
+                  </div>
+                  {/* Preview Heading */}
+                  <div className="mb-4">
+                    <h3 className="text-2xl font-bold">
+                      <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">{headingColor}</span>
+                      <span className="text-gray-900 dark:text-white"> {headingRest}</span>
+                    </h3>
+                  </div>
                   {/* Title */}
                   <div>
                     <label className="flex items-center text-sm font-semibold text-gray-700 mb-2">

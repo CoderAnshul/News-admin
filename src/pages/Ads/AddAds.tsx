@@ -1,4 +1,4 @@
-import { Upload, Link as LinkIcon, Type, Eye, Save, ImageIcon, X } from "lucide-react";
+import { Upload, Link as LinkIcon, Type, Eye, Save, ImageIcon, X, MapPin } from "lucide-react";
 import { useState, ChangeEvent, FormEvent } from "react";
 
 interface AdFormData {
@@ -6,6 +6,7 @@ interface AdFormData {
   imageUrl: string;
   link: string;
   description: string;
+  location: string;
 }
 
 export default function AddAds() {
@@ -13,12 +14,19 @@ export default function AddAds() {
     title: "",
     imageUrl: "",
     link: "",
-    description: ""
+    description: "",
+    location: ""
   });
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-  const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const locationOptions = [
+    { value: "", label: "Select Ad Placement Location" },
+    { value: "home-banner", label: "Homepage Top Banner" },
+    { value: "between-paragraph", label: "Article Inline (Between Paragraphs)" }
+  ];
+
+  const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
@@ -57,7 +65,7 @@ export default function AddAds() {
     alert("Advertisement created successfully!");
     
     // Reset form
-    setFormData({ title: "", imageUrl: "", link: "", description: "" });
+    setFormData({ title: "", imageUrl: "", link: "", description: "", location: "" });
     setImagePreview(null);
     setIsSubmitting(false);
   };
@@ -165,10 +173,31 @@ export default function AddAds() {
                 />
               </div>
 
+              {/* Location Selection */}
+              <div className="space-y-2">
+                <label className="flex items-center text-sm font-semibold text-gray-700 mb-3">
+                  <MapPin className="w-4 h-4 mr-2 text-indigo-500" />
+                  Ad Placement Location
+                </label>
+                <select
+                  name="location"
+                  value={formData.location}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:outline-none transition-colors duration-200 text-gray-700"
+                  required
+                >
+                  {locationOptions.map(option => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               {/* Submit Button */}
               <button
                 onClick={handleSubmit}
-                disabled={isSubmitting || !formData.title || !formData.link}
+                disabled={isSubmitting || !formData.title || !formData.link || !formData.location}
                 className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-500 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-200 transform hover:scale-[1.02] disabled:scale-100 disabled:cursor-not-allowed shadow-lg hover:shadow-xl flex items-center justify-center"
               >
                 {isSubmitting ? (
@@ -232,6 +261,13 @@ export default function AddAds() {
                       <div className="flex items-center text-indigo-500 text-sm">
                         <LinkIcon className="w-3 h-3 mr-1" />
                         <span className="truncate">{formData.link}</span>
+                      </div>
+                    )}
+
+                    {formData.location && (
+                      <div className="flex items-center text-gray-500 text-xs mt-2 pt-2 border-t border-gray-100">
+                        <MapPin className="w-3 h-3 mr-1" />
+                        <span>Will be shown: {locationOptions.find(opt => opt.value === formData.location)?.label}</span>
                       </div>
                     )}
                   </div>

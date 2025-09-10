@@ -7,23 +7,37 @@ interface Category {
   description: string;
   createdAt: string;
   articles: number;
+  color: string;
 }
 
 export default function Categories() {
   const [categories, setCategories] = useState<Category[]>(
     [
-      { id: 1, name: "Technology", description: "Latest tech news and updates", createdAt: "2024-01-15", articles: 45 },
-      { id: 2, name: "Sports", description: "Sports news and events", createdAt: "2024-01-16", articles: 32 },
-      { id: 3, name: "Politics", description: "Political news and analysis", createdAt: "2024-01-17", articles: 28 },
+      { id: 1, name: "Technology", description: "Latest tech news and updates", createdAt: "2024-01-15", articles: 45, color: "#3B82F6" },
+      { id: 2, name: "Sports", description: "Sports news and events", createdAt: "2024-01-16", articles: 32, color: "#10B981" },
+      { id: 3, name: "Politics", description: "Political news and analysis", createdAt: "2024-01-17", articles: 28, color: "#F59E0B" },
     ]
   );
 
   const [showModal, setShowModal] = useState<boolean>(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>("");
-  const [formData, setFormData] = useState<{ name: string; description: string }>(
-    { name: "", description: "" }
+  const [formData, setFormData] = useState<{ name: string; description: string; color: string }>(
+    { name: "", description: "", color: "#3B82F6" }
   );
+
+  const colorOptions = [
+    { value: "#3B82F6", name: "Blue" },
+    { value: "#10B981", name: "Green" },
+    { value: "#F59E0B", name: "Yellow" },
+    { value: "#EF4444", name: "Red" },
+    { value: "#8B5CF6", name: "Purple" },
+    { value: "#F97316", name: "Orange" },
+    { value: "#06B6D4", name: "Cyan" },
+    { value: "#84CC16", name: "Lime" },
+    { value: "#EC4899", name: "Pink" },
+    { value: "#6B7280", name: "Gray" }
+  ];
 
   const filteredCategories = categories.filter(category =>
     category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -37,7 +51,7 @@ export default function Categories() {
     if (editingCategory) {
       setCategories(prev => prev.map(cat => 
         cat.id === editingCategory.id 
-          ? { ...cat, name: formData.name, description: formData.description }
+          ? { ...cat, name: formData.name, description: formData.description, color: formData.color }
           : cat
       ));
     } else {
@@ -46,19 +60,20 @@ export default function Categories() {
         name: formData.name,
         description: formData.description,
         createdAt: new Date().toISOString().split('T')[0],
-        articles: 0
+        articles: 0,
+        color: formData.color
       };
       setCategories(prev => [...prev, newCategory]);
     }
 
-    setFormData({ name: "", description: "" });
+    setFormData({ name: "", description: "", color: "#3B82F6" });
     setShowModal(false);
     setEditingCategory(null);
   };
 
   const handleEdit = (category: Category) => {
     setEditingCategory(category);
-    setFormData({ name: category.name, description: category.description });
+    setFormData({ name: category.name, description: category.description, color: category.color });
     setShowModal(true);
   };
 
@@ -71,7 +86,7 @@ export default function Categories() {
   const closeModal = () => {
     setShowModal(false);
     setEditingCategory(null);
-    setFormData({ name: "", description: "" });
+    setFormData({ name: "", description: "", color: "#3B82F6" });
   };
 
   return (
@@ -144,8 +159,14 @@ export default function Categories() {
                   filteredCategories.map((category) => (
                     <tr key={category.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                       <td className="px-6 py-4">
-                        <div className="text-sm font-medium text-gray-900 dark:text-white">
-                          {category.name}
+                        <div className="flex items-center">
+                          <div 
+                            className="w-3 h-3 rounded-full mr-3" 
+                            style={{ backgroundColor: category.color }}
+                          ></div>
+                          <div className="text-sm font-medium text-gray-900 dark:text-white">
+                            {category.name}
+                          </div>
                         </div>
                       </td>
                       <td className="px-6 py-4">
@@ -243,7 +264,7 @@ export default function Categories() {
                     placeholder="Enter category name"
                   />
                 </div>
-                <div className="mb-6">
+                <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Description
                   </label>
@@ -254,6 +275,56 @@ export default function Categories() {
                     placeholder="Enter category description"
                     rows={3}
                   />
+                </div>
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Category Color *
+                  </label>
+                  <div className="space-y-3">
+                    {/* Color Picker Input */}
+                    <div className="flex items-center space-x-3">
+                      <input
+                        type="color"
+                        value={formData.color}
+                        onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                        className="w-12 h-10 border border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer"
+                      />
+                      <input
+                        type="text"
+                        value={formData.color.toUpperCase()}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          if (/^#[0-9A-Fa-f]{0,6}$/.test(value)) {
+                            setFormData({ ...formData, color: value });
+                          }
+                        }}
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white font-mono text-sm"
+                        placeholder="#3B82F6"
+                        maxLength={7}
+                      />
+                    </div>
+                    
+                    {/* Quick Color Presets */}
+                    <div>
+                      <span className="text-xs text-gray-500 dark:text-gray-400 mb-2 block">Quick presets:</span>
+                      <div className="grid grid-cols-10 gap-1">
+                        {colorOptions.map((color) => (
+                          <button
+                            key={color.value}
+                            type="button"
+                            onClick={() => setFormData({ ...formData, color: color.value })}
+                            className={`w-6 h-6 rounded border-2 transition-all hover:scale-110 ${
+                              formData.color.toUpperCase() === color.value.toUpperCase()
+                                ? 'border-gray-800 dark:border-white' 
+                                : 'border-gray-300 dark:border-gray-600'
+                            }`}
+                            style={{ backgroundColor: color.value }}
+                            title={color.name}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
                 </div>
                 <div className="flex justify-end space-x-3">
                   <button

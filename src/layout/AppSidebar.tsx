@@ -91,6 +91,21 @@ const navItems: NavItem[] = [
       { name: "Role & Permission Control", path: "/settings/roles" },
     ],
   },
+  {
+    icon: <PageIcon />,
+    name: "FAQ",
+    path: "/faq",
+  },
+  {
+    icon: <PageIcon />,
+    name: "Users",
+    path: "/users",
+  },
+  {
+    icon: <PageIcon />,
+    name: "Subscription Plans",
+    path: "/subscription-plans",
+  },
 ];
 
 const othersItems: NavItem[] = [
