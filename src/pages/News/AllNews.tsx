@@ -1,5 +1,8 @@
 import React, { useState, ChangeEvent } from "react";
 import { Plus, Edit, Trash2, Search, Calendar, User, Tag, FileText, Upload, X, Save } from "lucide-react";
+import SimpleMDE from 'react-simplemde-editor';
+import 'easymde/dist/easymde.min.css';
+
 
 interface News {
   id: number;
@@ -41,6 +44,7 @@ export default function AllNews() {
 
   const [headingColor, setHeadingColor] = useState<string>("");
   const [headingRest, setHeadingRest] = useState<string>("");
+  const [editorContent, setEditorContent] = useState<string>("");
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -88,6 +92,7 @@ export default function AllNews() {
     setEditingNews(null);
     setHeadingColor("");
     setHeadingRest("");
+    setEditorContent("");
   };
 
   const handleEdit = (news: News) => {
@@ -198,6 +203,8 @@ export default function AllNews() {
                   </button>
                 </div>
 
+                
+
                 <div className="space-y-6 ">
                   {/* Heading Inputs */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -233,22 +240,7 @@ export default function AllNews() {
                       <span className="text-gray-900 dark:text-white"> {headingRest}</span>
                     </h3>
                   </div>
-                  {/* Title */}
-                  <div>
-                    <label className="flex items-center text-sm font-semibold text-gray-700 mb-2">
-                      <FileText className="w-4 h-4 mr-2 text-blue-500" />
-                      Article Title *
-                    </label>
-                    <input
-                      type="text"
-                      name="title"
-                      value={formData.title}
-                      onChange={handleInputChange}
-                      placeholder="Enter article title..."
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors"
-                      required
-                    />
-                  </div>
+                  <SimpleMDE value={editorContent} onChange={setEditorContent} options={{ spellChecker: false, placeholder: 'Write your news content here...' }} className="mb-6" />
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Author */}
