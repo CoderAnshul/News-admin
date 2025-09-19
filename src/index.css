@@ -783,3 +783,84 @@ span.flatpickr-weekday,
 .simplebar-scrollbar.simplebar-visible:before {
   @apply opacity-100;
 }
+
+/* SimpleMDE Editor Styles */
+.CodeMirror {
+  border: none !important;
+  font-family: inherit;
+  height: 200px;
+  background: white;
+}
+
+.editor-toolbar {
+  border: none !important;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e5e7eb !important;
+  padding: 8px;
+}
+
+.editor-toolbar button {
+  border: none !important;
+  background: transparent !important;
+  color: #6b7280 !important;
+  padding: 4px 8px;
+  border-radius: 4px;
+  margin: 0 2px;
+}
+
+.editor-toolbar button:hover {
+  background: #e5e7eb !important;
+  color: #374151 !important;
+}
+
+.editor-toolbar button.active {
+  background: #3b82f6 !important;
+  color: white !important;
+}
+
+.editor-toolbar i.separator {
+  border-left: 1px solid #d1d5db;
+  margin: 0 6px;
+}
+
+.editor-preview {
+  background: white;
+  border: none !important;
+  padding: 16px;
+}
+
+.editor-preview-side {
+  background: white;
+  border: none !important;
+  border-left: 1px solid #e5e7eb !important;
+}
+
+.CodeMirror-focused .CodeMirror-selected {
+  background: #3b82f6 !important;
+}
+
+.CodeMirror .CodeMirror-cursor {
+  border-left: 1px solid #374151;
+}
+.CodeMirror .CodeMirror-cursor {
+  border-left: 1px solid #374151;
+}
+
+/* Fix for SimpleMDE editor focus issues */
+.editor-container .CodeMirror {
+  border: none !important;
+  font-family: inherit;
+  height: 200px;
+  background: white;
+}
+
+.editor-container .editor-toolbar {
+  border: none !important;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e5e7eb !important;
+  padding: 8px;
+}
+
+.editor-container .CodeMirror-focused {
+  outline: none !important;
+}

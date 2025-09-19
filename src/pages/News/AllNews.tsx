@@ -1,4 +1,4 @@
-import React, { useState, ChangeEvent } from "react";
+import React, { useState, ChangeEvent, FormEvent, useCallback } from "react";
 import { Plus, Edit, Trash2, Search, Calendar, User, Tag, FileText, Upload, X, Save, Settings, Clock, TrendingUp, Hash } from "lucide-react";
 import SimpleMDE from 'react-simplemde-editor';
 import 'easymde/dist/easymde.min.css';
@@ -148,22 +148,20 @@ export default function AllNews() {
     }));
   };
 
-  const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleInputChange = useCallback((e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     if (type === 'checkbox') {
       const checked = (e.target as HTMLInputElement).checked;
       setFormData(prev => ({ 
         ...prev, 
         [name]: checked,
-        // Reset scheduling fields if unchecked
         ...(name === 'isScheduled' && !checked ? { scheduledDate: "", scheduledTime: "" } : {}),
-        // Auto-set status to Scheduled if scheduling is enabled
         ...(name === 'isScheduled' && checked ? { status: "Scheduled" } : {})
       }));
     } else {
       setFormData(prev => ({ ...prev, [name]: value }));
     }
-  };
+  }, []);
 
   const handleImageUpload = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -174,32 +172,6 @@ export default function AllNews() {
       };
       reader.readAsDataURL(file);
     }
-  };
-
-  const handleSubmit = (e: React.FormEvent<HTMLButtonElement> | React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!formData.title || !formData.author || !formData.category) return;
-    
-    // Validate scheduling
-    if (formData.isScheduled && (!formData.scheduledDate || !formData.scheduledTime)) {
-      alert("Please set both scheduled date and time for scheduled posts.");
-      return;
-    }
-
-    const newNews: News = {
-      id: editingNews ? editingNews.id : Date.now(),
-      ...formData,
-      date: new Date().toISOString().split('T')[0],
-      // Set status to Scheduled if scheduling is enabled
-      status: formData.isScheduled ? "Scheduled" : formData.status
-    };
-    
-    if (editingNews) {
-      setNewsData(prev => prev.map(news => news.id === editingNews.id ? newNews : news));
-    } else {
-      setNewsData(prev => [newNews, ...prev]);
-    }
-    resetForm();
   };
 
   const resetForm = () => {
@@ -226,8 +198,17 @@ export default function AllNews() {
     setEditorContent("");
   };
 
-  const handleEdit = (news: News) => {
+  const handleEdit = useCallback((news: News) => {
     setEditingNews(news);
+    
+    // Split the title back into parts
+    const titleParts = news.title.split(' ');
+    const firstWord = titleParts[0] || '';
+    const restWords = titleParts.slice(1).join(' ') || '';
+    
+    setHeadingColor(firstWord);
+    setHeadingRest(restWords);
+    
     setFormData({ 
       ...news, 
       content: news.content || "",
@@ -237,7 +218,64 @@ export default function AllNews() {
       isTrending: news.isTrending || false,
       tags: news.tags || []
     });
+    setEditorContent(news.content || "");
     setShowAddForm(true);
+  }, []);
+
+  const handleSubmit = useCallback((e: React.FormEvent<HTMLButtonElement> | React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    
+    // Combine heading parts to create title
+    const combinedTitle = (headingColor + " " + headingRest).trim();
+    
+    if (!combinedTitle || !formData.author || !formData.category) return;
+    
+    // Validate scheduling
+    if (formData.isScheduled && (!formData.scheduledDate || !formData.scheduledTime)) {
+      alert("Please set both scheduled date and time for scheduled posts.");
+      return;
+    }
+
+    const newNews: News = {
+      id: editingNews ? editingNews.id : Date.now(),
+      ...formData,
+      title: combinedTitle, // Use the combined title here
+      content: editorContent,
+      date: new Date().toISOString().split('T')[0],
+      // Set status to Scheduled if scheduling is enabled
+      status: formData.isScheduled ? "Scheduled" : formData.status
+    };
+    
+    if (editingNews) {
+      setNewsData(prev => prev.map(news => news.id === editingNews.id ? newNews : news));
+    } else {
+      setNewsData(prev => [newNews, ...prev]);
+    }
+    resetForm();
+  }, [headingColor, headingRest, formData, editorContent, editingNews]);
+
+  const resetCategoryForm = () => {
+    setCategoryFormData({ name: "", description: "", color: "#3B82F6", parentId: undefined, slug: "" });
+    setShowCategoryModal(false);
+    setEditingCategory(null);
+  };
+
+  const handleCategoryEdit = (category: Category) => {
+    setEditingCategory(category);
+    setCategoryFormData({ 
+      name: category.name, 
+      description: category.description, 
+      color: category.color,
+      parentId: category.parentId,
+      slug: category.slug
+    });
+    setShowCategoryModal(true);
+  };
+
+  const handleCategoryDelete = (id: number) => {
+    if (window.confirm("Are you sure you want to delete this category? This action cannot be undone.")) {
+      setCategoriesData(prev => prev.filter(cat => cat.id !== id));
+    }
   };
 
   const handleDelete = (id: number) => {
@@ -271,7 +309,7 @@ export default function AllNews() {
     }));
   };
 
-  // Category handlers
+  // Category handlers - Add missing function
   const handleCategorySubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!categoryFormData.name.trim()) return;
@@ -299,30 +337,6 @@ export default function AllNews() {
     }
 
     resetCategoryForm();
-  };
-
-  const resetCategoryForm = () => {
-    setCategoryFormData({ name: "", description: "", color: "#3B82F6", parentId: undefined, slug: "" });
-    setShowCategoryModal(false);
-    setEditingCategory(null);
-  };
-
-  const handleCategoryEdit = (category: Category) => {
-    setEditingCategory(category);
-    setCategoryFormData({ 
-      name: category.name, 
-      description: category.description, 
-      color: category.color,
-      parentId: category.parentId,
-      slug: category.slug
-    });
-    setShowCategoryModal(true);
-  };
-
-  const handleCategoryDelete = (id: number) => {
-    if (window.confirm("Are you sure you want to delete this category? This action cannot be undone.")) {
-      setCategoriesData(prev => prev.filter(cat => cat.id !== id));
-    }
   };
 
   const filteredNews = newsData.filter(news => {
@@ -473,7 +487,7 @@ export default function AllNews() {
         {/* Add/Edit Form Modal */}
         {showAddForm && (
           <div className="fixed inset-0 bg-black/20 backdrop-blur-sm bg-opacity-50 flex items-center justify-center z-[1000005] p-4">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto hide-scrollbar ">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto hide-scrollbar">
               <div className="p-6">
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="text-2xl font-bold text-gray-800">
@@ -487,9 +501,7 @@ export default function AllNews() {
                   </button>
                 </div>
 
-                
-
-                <div className="space-y-6 ">
+                <div className="space-y-6">
                   {/* Heading Inputs */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
@@ -517,10 +529,13 @@ export default function AllNews() {
                       />
                     </div>
                   </div>
+
+                  {/* Content Label */}
                   <label className="flex items-center text-sm font-semibold text-gray-700 mb-2">
-                      <FileText className="w-4 h-4 mr-2 text-blue-500" />
-                      Content
-                    </label>
+                    <FileText className="w-4 h-4 mr-2 text-blue-500" />
+                    Content *
+                  </label>
+
                   {/* Preview Heading */}
                   <div className="mb-4">
                     <h3 className="text-2xl font-bold">
@@ -528,7 +543,26 @@ export default function AllNews() {
                       <span className="text-gray-900 dark:text-white"> {headingRest}</span>
                     </h3>
                   </div>
-                  <SimpleMDE value={editorContent} onChange={setEditorContent} options={{ spellChecker: false, placeholder: 'Write your news content here...' }} className="mb-6" />
+
+                  {/* SimpleMDE Editor */}
+                  <SimpleMDE 
+                    value={editorContent} 
+                    onChange={setEditorContent} 
+                    options={{ 
+                      spellChecker: false, 
+                      placeholder: 'Write your news content here...',
+                      toolbar: [
+                        "bold", "italic", "heading", "|",
+                        "quote", "unordered-list", "ordered-list", "|", 
+                        "link", "image", "|",
+                        "preview", "side-by-side", "fullscreen", "|",
+                        "guide"
+                      ],
+                      status: false,
+                      hideIcons: ["guide"]
+                    }} 
+                    className="mb-6" 
+                  />
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Author */}
@@ -789,13 +823,11 @@ export default function AllNews() {
                     />
                   </div>
 
-
-
                   {/* Submit Buttons */}
                   <div className="flex gap-4">
                     <button
                       onClick={handleSubmit}
-                      disabled={!formData.title || !formData.author || !formData.category || (formData.isScheduled && (!formData.scheduledDate || !formData.scheduledTime))}
+                      disabled={!(headingColor.trim() || headingRest.trim()) || !editorContent || !formData.author || !formData.category || (formData.isScheduled && (!formData.scheduledDate || !formData.scheduledTime))}
                       className="flex-1 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 disabled:from-gray-400 disabled:to-gray-500 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 transform hover:scale-[1.02] disabled:scale-100 disabled:cursor-not-allowed shadow-lg hover:shadow-xl flex items-center justify-center"
                     >
                       <Save className="w-5 h-5 mr-2" />
