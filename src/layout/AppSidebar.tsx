@@ -65,6 +65,7 @@ const navItems: NavItem[] = [
     name: "Advertisements",
     subItems: [
       { name: "Add Advertisement", path: "/ads/add" },
+      { name: "Manage Advertisements", path: "/ads/manage" },
     ],
   },
   {
@@ -80,6 +81,7 @@ const navItems: NavItem[] = [
     subItems: [
       { name: "Traffic Reports", path: "/analytics/traffic" },
       { name: "Popular News & Trends", path: "/analytics/popular" },
+      { name: "Trending Topics", path: "/analytics/trending" },
     ],
   },
   {

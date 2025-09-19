@@ -1,4 +1,4 @@
-import { Plus, Trash2, Edit3, Search } from "lucide-react";
+import { Plus, Trash2, Edit3, Search, X } from "lucide-react";
 import { useState, FormEvent } from "react";
 
 interface Category {
@@ -8,22 +8,26 @@ interface Category {
   createdAt: string;
   articles: number;
   color: string;
+  parentId?: number;
+  slug: string;
 }
 
 export default function Categories() {
   const [categories, setCategories] = useState<Category[]>(
     [
-      { id: 1, name: "Technology", description: "Latest tech news and updates", createdAt: "2024-01-15", articles: 45, color: "#3B82F6" },
-      { id: 2, name: "Sports", description: "Sports news and events", createdAt: "2024-01-16", articles: 32, color: "#10B981" },
-      { id: 3, name: "Politics", description: "Political news and analysis", createdAt: "2024-01-17", articles: 28, color: "#F59E0B" },
+      { id: 1, name: "Technology", description: "Latest tech news and updates", createdAt: "2024-01-15", articles: 45, color: "#3B82F6", slug: "technology" },
+      { id: 2, name: "Sports", description: "Sports news and events", createdAt: "2024-01-16", articles: 32, color: "#10B981", slug: "sports" },
+      { id: 3, name: "Politics", description: "Political news and analysis", createdAt: "2024-01-17", articles: 28, color: "#F59E0B", slug: "politics" },
+      { id: 4, name: "Mobile Technology", description: "Mobile and smartphone news", createdAt: "2024-01-18", articles: 15, color: "#3B82F6", parentId: 1, slug: "mobile-technology" },
+      { id: 5, name: "AI & Machine Learning", description: "Artificial Intelligence news", createdAt: "2024-01-19", articles: 22, color: "#8B5CF6", parentId: 1, slug: "ai-machine-learning" },
     ]
   );
 
   const [showModal, setShowModal] = useState<boolean>(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>("");
-  const [formData, setFormData] = useState<{ name: string; description: string; color: string }>(
-    { name: "", description: "", color: "#3B82F6" }
+  const [formData, setFormData] = useState<{ name: string; description: string; color: string; parentId?: number; slug: string }>(
+    { name: "", description: "", color: "#3B82F6", parentId: undefined, slug: "" }
   );
 
   const colorOptions = [
@@ -39,19 +43,48 @@ export default function Categories() {
     { value: "#6B7280", name: "Gray" }
   ];
 
+  // Generate slug from name
+  const generateSlug = (name: string): string => {
+    return name
+      .toLowerCase()
+      .trim()
+      .replace(/[^\w\s-]/g, '') // Remove special characters
+      .replace(/[\s_-]+/g, '-') // Replace spaces and underscores with hyphens
+      .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
+  };
+
+  // Get parent category name
+  const getParentCategoryName = (parentId?: number): string => {
+    if (!parentId) return "";
+    const parent = categories.find(cat => cat.id === parentId);
+    return parent ? parent.name : "";
+  };
+
+  // Get available parent categories (excluding current category when editing)
+  const getAvailableParentCategories = (): Category[] => {
+    return categories.filter(cat => 
+      cat.id !== editingCategory?.id && // Exclude current category when editing
+      !cat.parentId // Only show top-level categories as potential parents
+    );
+  };
+
   const filteredCategories = categories.filter(category =>
     category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    category.description.toLowerCase().includes(searchTerm.toLowerCase())
+    category.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    getParentCategoryName(category.parentId).toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleSubmit = (e: FormEvent<HTMLButtonElement> | FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!formData.name.trim()) return;
 
+    // Generate slug if not provided
+    const slug = formData.slug.trim() || generateSlug(formData.name);
+
     if (editingCategory) {
       setCategories(prev => prev.map(cat => 
         cat.id === editingCategory.id 
-          ? { ...cat, name: formData.name, description: formData.description, color: formData.color }
+          ? { ...cat, name: formData.name, description: formData.description, color: formData.color, parentId: formData.parentId, slug }
           : cat
       ));
     } else {
@@ -61,19 +94,27 @@ export default function Categories() {
         description: formData.description,
         createdAt: new Date().toISOString().split('T')[0],
         articles: 0,
-        color: formData.color
+        color: formData.color,
+        parentId: formData.parentId,
+        slug
       };
       setCategories(prev => [...prev, newCategory]);
     }
 
-    setFormData({ name: "", description: "", color: "#3B82F6" });
+    setFormData({ name: "", description: "", color: "#3B82F6", parentId: undefined, slug: "" });
     setShowModal(false);
     setEditingCategory(null);
   };
 
   const handleEdit = (category: Category) => {
     setEditingCategory(category);
-    setFormData({ name: category.name, description: category.description, color: category.color });
+    setFormData({ 
+      name: category.name, 
+      description: category.description, 
+      color: category.color,
+      parentId: category.parentId,
+      slug: category.slug
+    });
     setShowModal(true);
   };
 
@@ -86,7 +127,16 @@ export default function Categories() {
   const closeModal = () => {
     setShowModal(false);
     setEditingCategory(null);
-    setFormData({ name: "", description: "", color: "#3B82F6" });
+    setFormData({ name: "", description: "", color: "#3B82F6", parentId: undefined, slug: "" });
+  };
+
+  // Auto-generate slug when name changes
+  const handleNameChange = (name: string) => {
+    setFormData(prev => ({
+      ...prev,
+      name,
+      slug: prev.slug || generateSlug(name) // Only auto-generate if slug is empty
+    }));
   };
 
   return (
@@ -129,10 +179,16 @@ export default function Categories() {
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50 dark:bg-gray-700">
+              <thead className="bg-gray-50 whitespace-nowrap dark:bg-gray-700">
                 <tr>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Category Name
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Parent Category
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Slug
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Description
@@ -151,7 +207,7 @@ export default function Categories() {
               <tbody className="divide-y divide-gray-200 dark:divide-gray-600">
                 {filteredCategories.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                    <td colSpan={7} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
                       {searchTerm ? "No categories found matching your search." : "No categories created yet."}
                     </td>
                   </tr>
@@ -167,6 +223,22 @@ export default function Categories() {
                           <div className="text-sm font-medium text-gray-900 dark:text-white">
                             {category.name}
                           </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-sm text-gray-600 dark:text-gray-300">
+                          {category.parentId ? (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">
+                              {getParentCategoryName(category.parentId)}
+                            </span>
+                          ) : (
+                            <span className="text-gray-400">Main Category</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-sm text-gray-600 dark:text-gray-300 font-mono bg-gray-50 dark:bg-gray-700 px-2 py-1 rounded">
+                          {category.slug}
                         </div>
                       </td>
                       <td className="px-6 py-4">
@@ -240,11 +312,18 @@ export default function Categories() {
       {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/30 backdrop-blur-sm bg-opacity-50 flex items-center justify-center p-4 z-[100005]">
-          <div className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-md">
-            <div className="p-6">
+          <div className="bg-white max-h-[500px] overflow-y-scroll hide-scrollbar dark:bg-gray-800 rounded-xl w-full max-w-md">
+            <div className="p-6 relative">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
                 {editingCategory ? "Edit Category" : "Create New Category"}
               </h2>
+              <button
+                onClick={closeModal}
+                className="absolute top-4 right-4 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                title="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
               <div>
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -253,7 +332,7 @@ export default function Categories() {
                   <input
                     type="text"
                     value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    onChange={(e) => handleNameChange(e.target.value)}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         e.preventDefault();
@@ -264,6 +343,44 @@ export default function Categories() {
                     placeholder="Enter category name"
                   />
                 </div>
+
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Parent Category
+                  </label>
+                  <select
+                    value={formData.parentId || ""}
+                    onChange={(e) => setFormData({ ...formData, parentId: e.target.value ? Number(e.target.value) : undefined })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  >
+                    <option value="">No Parent (Main Category)</option>
+                    {getAvailableParentCategories().map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Select a parent category to create a subcategory
+                  </p>
+                </div>
+
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Slug *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.slug}
+                    onChange={(e) => setFormData({ ...formData, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-') })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white font-mono text-sm"
+                    placeholder="category-slug"
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    URL-friendly version of the category name. Auto-generated if left empty.
+                  </p>
+                </div>
+
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Description
@@ -276,6 +393,7 @@ export default function Categories() {
                     rows={3}
                   />
                 </div>
+
                 <div className="mb-6">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Category Color *
@@ -326,7 +444,7 @@ export default function Categories() {
                     </div>
                   </div>
                 </div>
-                <div className="flex justify-end space-x-3">
+                <div className="flex justify-end  z-10 bg-white w-full space-x-3">
                   <button
                     onClick={closeModal}
                     className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"

@@ -12,10 +12,11 @@ type ShortType = {
   type: 'image' | 'video';
   createdAt: string;
   status: 'published' | 'draft';
+  slug?: string;
+  tags?: string[];
 };
 
 const shortsData: ShortType[] = [
-  // ... same data as before ...
   { 
     id: 1, 
     title: "Amazing Mountain Adventure", 
@@ -25,7 +26,9 @@ const shortsData: ShortType[] = [
     views: 1200,
     type: "image",
     createdAt: "2024-01-15",
-    status: "published"
+    status: "published",
+    slug: "amazing-mountain-adventure",
+    tags: ["adventure", "mountain", "travel"]
   },
   { 
     id: 2, 
@@ -36,7 +39,9 @@ const shortsData: ShortType[] = [
     views: 950,
     type: "video",
     createdAt: "2024-01-14",
-    status: "published"
+    status: "published",
+    slug: "political-discussion",
+    tags: ["politics", "news", "discussion"]
   },
   { 
     id: 3, 
@@ -47,7 +52,9 @@ const shortsData: ShortType[] = [
     views: 2300,
     type: "video",
     createdAt: "2024-01-13",
-    status: "draft"
+    status: "draft",
+    slug: "business-innovation",
+    tags: ["business", "innovation", "strategy"]
   },
   { 
     id: 4, 
@@ -58,7 +65,9 @@ const shortsData: ShortType[] = [
     views: 1800,
     type: "image",
     createdAt: "2024-01-12",
-    status: "published"
+    status: "published",
+    slug: "entertainment-tonight",
+    tags: ["entertainment", "celebrities", "news"]
   },
   { 
     id: 5, 
@@ -69,7 +78,9 @@ const shortsData: ShortType[] = [
     views: 3200,
     type: "video",
     createdAt: "2024-01-11",
-    status: "published"
+    status: "published",
+    slug: "tech-revolution",
+    tags: ["technology", "innovation", "trends"]
   }
 ];
 
@@ -165,9 +176,35 @@ export default function ShortsAll() {
               {short.title}
             </h3>
             
+            {/* Slug display */}
+            {short.slug && (
+              <div className="text-xs text-gray-400 font-mono mb-2">
+                /{short.slug}
+              </div>
+            )}
+            
             <p className="text-gray-600 text-sm mb-3 line-clamp-2">
               {short.text}
             </p>
+            
+            {/* Tags display */}
+            {short.tags && short.tags.length > 0 && (
+              <div className="flex flex-wrap gap-1 mb-3">
+                {short.tags.slice(0, 3).map((tag, index) => (
+                  <span
+                    key={index}
+                    className="inline-flex items-center px-2 py-1 rounded text-xs bg-gray-100 text-gray-600"
+                  >
+                    #{tag}
+                  </span>
+                ))}
+                {short.tags.length > 3 && (
+                  <span className="text-xs text-gray-500">
+                    +{short.tags.length - 3}
+                  </span>
+                )}
+              </div>
+            )}
             
             <div className="flex items-center justify-between">
               <span className="text-gray-500 text-xs">
@@ -210,6 +247,7 @@ export default function ShortsAll() {
               <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Media</th>
               <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Title</th>
               <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Category</th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Tags</th>
               <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Views</th>
               <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Status</th>
               <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Date</th>
@@ -238,6 +276,9 @@ export default function ShortsAll() {
                 <td className="px-6 py-4">
                   <div>
                     <div className="font-medium text-gray-900">{short.title}</div>
+                    {short.slug && (
+                      <div className="text-xs text-gray-400 font-mono">/{short.slug}</div>
+                    )}
                     <div className="text-sm text-gray-500 truncate max-w-xs">{short.text}</div>
                   </div>
                 </td>
@@ -245,6 +286,27 @@ export default function ShortsAll() {
                   <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded">
                     {short.category}
                   </span>
+                </td>
+                <td className="px-6 py-4">
+                  {short.tags && short.tags.length > 0 ? (
+                    <div className="flex flex-wrap gap-1 max-w-xs">
+                      {short.tags.slice(0, 2).map((tag, index) => (
+                        <span
+                          key={index}
+                          className="inline-flex items-center px-2 py-1 rounded text-xs bg-gray-100 text-gray-600"
+                        >
+                          #{tag}
+                        </span>
+                      ))}
+                      {short.tags.length > 2 && (
+                        <span className="text-xs text-gray-500">
+                          +{short.tags.length - 2} more
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="text-gray-400 text-sm">No tags</span>
+                  )}
                 </td>
                 <td className="px-6 py-4 text-gray-900">
                   <div className="flex items-center">

@@ -1,5 +1,5 @@
 import { useState, useRef, ChangeEvent, FormEvent } from 'react';
-import { Plus, X, Link, Play, Pause, Eye, Upload } from 'lucide-react';
+import { Plus, X, Link, Play, Pause, Eye, Upload, Hash } from 'lucide-react';
 
 type LinkType = {
   url: string;
@@ -15,9 +15,80 @@ export default function AddShort() {
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
   const [autoThumbnailPreview, setAutoThumbnailPreview] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
+  
+  // New state for title, slug, and tags
+  const [title, setTitle] = useState<string>("");
+  const [slug, setSlug] = useState<string>("");
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState<string>("");
+  const [showTagSuggestions, setShowTagSuggestions] = useState<boolean>(false);
+  
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const mediaInputRef = useRef<HTMLInputElement | null>(null);
   const thumbnailInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Predefined tags for suggestions
+  const predefinedTags = [
+    "viral", "trending", "breaking", "news", "entertainment", "sports", 
+    "politics", "business", "technology", "lifestyle", "health", "travel",
+    "food", "music", "comedy", "education", "science", "nature", "art", 
+    "fashion", "gaming", "fitness", "motivation", "tips", "review", "tutorial"
+  ];
+
+  // Generate slug from title
+  const generateSlug = (title: string): string => {
+    return title
+      .toLowerCase()
+      .trim()
+      .replace(/[^\w\s-]/g, '')
+      .replace(/[\s_-]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  };
+
+  // Handle title change and auto-generate slug
+  const handleTitleChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const newTitle = e.target.value;
+    setTitle(newTitle);
+    if (!slug || slug === generateSlug(title)) {
+      setSlug(generateSlug(newTitle));
+    }
+  };
+
+  // Tag management functions
+  const addTag = (tag: string) => {
+    const trimmedTag = tag.trim().toLowerCase();
+    if (trimmedTag && !tags.includes(trimmedTag)) {
+      setTags(prev => [...prev, trimmedTag]);
+    }
+    setTagInput("");
+    setShowTagSuggestions(false);
+  };
+
+  const removeTag = (tagToRemove: string) => {
+    setTags(prev => prev.filter(tag => tag !== tagToRemove));
+  };
+
+  const handleTagInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      if (tagInput.trim()) {
+        addTag(tagInput);
+      }
+    } else if (e.key === 'Backspace' && !tagInput && tags.length) {
+      const lastTag = tags[tags.length - 1];
+      removeTag(lastTag);
+    }
+  };
+
+  const getFilteredTagSuggestions = () => {
+    if (!tagInput) return [];
+    return predefinedTags
+      .filter(tag => 
+        tag.toLowerCase().includes(tagInput.toLowerCase()) &&
+        !tags.includes(tag)
+      )
+      .slice(0, 6);
+  };
 
   const addLink = () => {
     setLinks([...links, { url: '', title: '' }]);
@@ -111,6 +182,9 @@ export default function AddShort() {
     e.preventDefault();
     // Handle form submission here
     const formData = {
+      title,
+      slug,
+      tags,
       mediaFile,
       thumbnailFile: thumbnailFile || autoThumbnailPreview,
       links: links.filter(link => link.url.trim() !== ''),
@@ -137,11 +211,95 @@ export default function AddShort() {
               </label>
               <input
                 type="text"
-                name="title"
+                value={title}
+                onChange={handleTitleChange}
                 required
                 className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
                 placeholder="Enter an engaging title..."
               />
+            </div>
+
+            {/* Slug */}
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-gray-700">
+                Slug
+              </label>
+              <input
+                type="text"
+                value={slug}
+                onChange={(e) => setSlug(e.target.value)}
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none font-mono text-sm"
+                placeholder="short-slug"
+              />
+              <p className="text-xs text-gray-500">
+                URL-friendly version of the title. Auto-generated if left empty.
+              </p>
+            </div>
+
+            {/* Tags Section */}
+            <div className="space-y-4">
+              <label className="block text-sm font-semibold text-gray-700">
+                <Hash className="inline w-4 h-4 mr-2" />
+                Tags
+              </label>
+              
+              {/* Selected Tags Display */}
+              {tags.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {tags.map((tag, index) => (
+                    <span
+                      key={index}
+                      className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800 border border-blue-200"
+                    >
+                      #{tag}
+                      <button
+                        type="button"
+                        onClick={() => removeTag(tag)}
+                        className="ml-2 text-blue-600 hover:text-blue-800 focus:outline-none"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* Tag Input */}
+              <div className="relative">
+                <input
+                  type="text"
+                  value={tagInput}
+                  onChange={(e) => {
+                    setTagInput(e.target.value);
+                    setShowTagSuggestions(e.target.value.length > 0);
+                  }}
+                  onKeyDown={handleTagInputKeyDown}
+                  onFocus={() => setShowTagSuggestions(tagInput.length > 0)}
+                  onBlur={() => setTimeout(() => setShowTagSuggestions(false), 200)}
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
+                  placeholder="Type tags and press Enter or comma to add..."
+                />
+                
+                {/* Tag Suggestions */}
+                {showTagSuggestions && getFilteredTagSuggestions().length > 0 && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                    {getFilteredTagSuggestions().map((suggestion, index) => (
+                      <button
+                        key={index}
+                        type="button"
+                        onClick={() => addTag(suggestion)}
+                        className="w-full px-4 py-2 text-left hover:bg-gray-50 focus:bg-gray-50 focus:outline-none text-sm border-b border-gray-100 last:border-b-0"
+                      >
+                        #{suggestion}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              
+              <p className="text-xs text-gray-500">
+                Press Enter or comma to add tags. Use hashtags for better discoverability.
+              </p>
             </div>
 
             {/* Media Upload Section */}

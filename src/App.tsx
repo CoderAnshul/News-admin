@@ -30,6 +30,7 @@ import PushNotifications from "./pages/PushNotifications";
 import FAQ from "./pages/FAQ"; // Import the FAQ component
 import UserPage from "./pages/User";
 import SubscriptionPlan from "./pages/SubscriptionPlan";
+import ViewAd from "./pages/Ads/ViewAd";
 
 export default function App() {
   return (
@@ -72,7 +73,12 @@ export default function App() {
             {/* Manage Categories and Locations */}
             <Route path="/categories" element={<Categories />} />
             <Route path="/locations" element={<Locations />} />
+
+            {/* Advertisements */}
             <Route path="/ads/add" element={<AddAds />} />
+            <Route path="/ads/manage" element={<AddAds />} />
+            <Route path="/ads/view/:id" element={<ViewAd />} />
+            <Route path="/ads/edit/:id" element={<AddAds />} />
 
             {/* News Management */}
             <Route path="/news/all" element={<AllNews />} />
