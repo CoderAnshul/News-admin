@@ -1,4 +1,4 @@
-import { Upload, Link as LinkIcon, Type, Eye, Save, ImageIcon, X, MapPin, Hash, Edit, Trash2, List, ArrowLeft, Plus, FileText } from "lucide-react";
+import { Upload, Link as LinkIcon, Type, Eye, Save, ImageIcon, X, MapPin, Hash, Edit, Trash2, ArrowLeft, Plus } from "lucide-react";
 import { useState, ChangeEvent, FormEvent, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router";
 

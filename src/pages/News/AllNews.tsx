@@ -355,12 +355,6 @@ export default function AllNews() {
     return today.toISOString().split('T')[0];
   };
 
-  // Get current time for default scheduling
-  const getCurrentTime = () => {
-    const now = new Date();
-    return now.toTimeString().slice(0, 5);
-  };
-
   // Tag management functions
   const addTag = (tag: string) => {
     const trimmedTag = tag.trim().toLowerCase();
