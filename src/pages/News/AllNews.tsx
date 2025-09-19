@@ -1,4 +1,4 @@
-import React, { useState, ChangeEvent, FormEvent, useCallback } from "react";
+import React, { useState, ChangeEvent, useCallback } from "react";
 import { Plus, Edit, Trash2, Search, Calendar, User, Tag, FileText, Upload, X, Save, Settings, Clock, TrendingUp, Hash } from "lucide-react";
 import SimpleMDE from 'react-simplemde-editor';
 import 'easymde/dist/easymde.min.css';
