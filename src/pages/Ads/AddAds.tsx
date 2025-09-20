@@ -11,6 +11,10 @@ interface AdFormData {
   location: string;
   slug: string;
   tags: string[];
+  amountPaid?: number;      // Add amount paid
+  clicksAllowed?: number;   // Add clicks allowed
+  categories?: string[]; // Add categories field
+  city?: string | string[]; // allow string[] for multi-select
 }
 
 interface Advertisement extends AdFormData {
@@ -39,7 +43,11 @@ export default function AddAds() {
     description: "",
     location: "",
     slug: "",
-    tags: []
+    tags: [],
+    amountPaid: undefined,      // Add to initial state
+    clicksAllowed: undefined,   // Add to initial state
+    categories: [], // for multi-select
+    city: [], // default to empty array for multi-select
   });
   
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -56,11 +64,28 @@ export default function AddAds() {
     { value: "popup", label: "Popup Advertisement" }
   ];
 
+  const cityLocations = [
+    { value: "bikaner", label: "Bikaner" },
+    { value: "jaipur", label: "Jaipur" },
+    { value: "delhi", label: "Delhi" },
+  ];
+
   const predefinedTags = [
     "banner", "popup", "sidebar", "sponsored", "promotion", "sale", "discount", 
     "new", "featured", "trending", "limited-time", "exclusive", "offer",
     "product", "service", "brand", "campaign", "marketing", "digital",
     "mobile", "desktop", "responsive", "clickable", "interactive"
+  ];
+
+  const allCategories = [
+    "Technology",
+    "Sports",
+    "Politics",
+    "Business",
+    "Health",
+    "Entertainment",
+    "Science",
+    "Travel",
   ];
 
   // Generate slug from title
@@ -116,14 +141,39 @@ export default function AddAds() {
   };
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
+    const { name, value, type } = e.target;
+    if (name === "categories") {
+      // Multi-select for categories
+      const options = (e.target as HTMLSelectElement).options;
+      const selected: string[] = [];
+      for (let i = 0; i < options.length; i++) {
+        if (options[i].selected) selected.push(options[i].value);
+      }
+      setFormData(prev => ({
+        ...prev,
+        categories: selected,
+      }));
+      return;
+    }
+    if (name === "city") {
+      // Multi-select for cities
+      const options = (e.target as HTMLSelectElement).options;
+      const selected: string[] = [];
+      for (let i = 0; i < options.length; i++) {
+        if (options[i].selected) selected.push(options[i].value);
+      }
+      setFormData(prev => ({
+        ...prev,
+        city: selected,
+      }));
+      return;
+    }
     setFormData(prev => ({
       ...prev,
-      [name]: value,
+      [name]: type === "number" ? (value === "" ? undefined : Number(value)) : value,
       // Auto-generate slug when title changes
       ...(name === 'title' ? { slug: prev.slug || generateSlug(value) } : {})
     }));
-    
     if (name === 'imageUrl' && value) {
       setImagePreview(value);
     }
@@ -156,7 +206,7 @@ export default function AddAds() {
       // Update existing ad
       setAdvertisements(prev => prev.map(ad => 
         ad.id === editingAd.id 
-          ? { ...ad, ...formData, id: editingAd.id }
+          ? { ...ad, ...formData, id: editingAd.id, categories: formData.categories || [] }
           : ad
       ));
       alert("Advertisement updated successfully!");
@@ -166,7 +216,8 @@ export default function AddAds() {
         ...formData,
         id: Date.now(),
         createdAt: new Date().toISOString(),
-        status: 'active'
+        status: 'active',
+        categories: formData.categories || [],
       };
       setAdvertisements(prev => [...prev, newAd]);
       alert("Advertisement created successfully!");
@@ -179,7 +230,7 @@ export default function AddAds() {
   };
 
   const resetForm = () => {
-    setFormData({ title: "", imageUrl: "", link: "", description: "", location: "", slug: "", tags: [] });
+    setFormData({ title: "", imageUrl: "", link: "", description: "", location: "", slug: "", tags: [], amountPaid: undefined, clicksAllowed: undefined, categories: [], city: [] });
     setImagePreview(null);
     setEditingAd(null);
     setTagInput("");
@@ -188,7 +239,10 @@ export default function AddAds() {
 
   const handleEdit = (ad: Advertisement) => {
     setEditingAd(ad);
-    setFormData(ad);
+    setFormData({
+      ...ad,
+      categories: ad.categories || [],
+    });
     setImagePreview(ad.imageUrl);
     setCurrentView('create');
   };
@@ -646,6 +700,99 @@ export default function AddAds() {
                 </select>
               </div>
 
+              {/* Multi City Location Selector */}
+              <div className="space-y-2">
+                <label className="flex items-center text-sm font-semibold text-gray-700 mb-3">
+                  <MapPin className="w-4 h-4 mr-2 text-indigo-500" />
+                  Select Cities
+                </label>
+                <select
+                  name="city"
+                  multiple
+                  value={Array.isArray(formData.city) ? formData.city : []}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:outline-none transition-colors duration-200 text-gray-700"
+                  style={{ minHeight: "3.5rem" }}
+                >
+                  {cityLocations.map(option => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500">
+                  Hold Ctrl (Windows) or Cmd (Mac) to select multiple cities.
+                </p>
+              </div>
+
+              {/* Amount Paid */}
+              <div className="space-y-2">
+                <label className="flex items-center text-sm font-semibold text-gray-700 mb-3">
+                  Amount Paid (₹)
+                </label>
+                <input
+                  type="number"
+                  name="amountPaid"
+                  value={formData.amountPaid ?? ""}
+                  onChange={handleInputChange}
+                  min={0}
+                  step={1}
+                  placeholder="Enter amount paid (in rupees)"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:outline-none transition-colors duration-200 text-gray-700"
+                />
+              </div>
+
+              {/* Clicks Allowed */}
+              <div className="space-y-2">
+                <label className="flex items-center text-sm font-semibold text-gray-700 mb-3">
+                  Views Allowed
+                </label>
+                <input
+                  type="number"
+                  name="clicksAllowed"
+                  value={formData.clicksAllowed ?? ""}
+                  onChange={handleInputChange}
+                  min={1}
+                  step={1}
+                  placeholder="Enter number of allowed clicks"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:outline-none transition-colors duration-200 text-gray-700"
+                />
+              </div>
+
+              {/* Category Checkbox Group */}
+              <div className="space-y-2">
+                <label className="flex items-center text-sm font-semibold text-gray-700 mb-3">
+                  <Hash className="w-4 h-4 mr-2 text-indigo-500" />
+                  Select Categories
+                </label>
+                <div className="flex flex-wrap gap-3">
+                  {allCategories.map(cat => (
+                    <label key={cat} className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        name="categories"
+                        value={cat}
+                        checked={formData.categories?.includes(cat)}
+                        onChange={e => {
+                          const checked = e.target.checked;
+                          setFormData(prev => ({
+                            ...prev,
+                            categories: checked
+                              ? [...(prev.categories || []), cat]
+                              : (prev.categories || []).filter(c => c !== cat)
+                          }));
+                        }}
+                        className="accent-indigo-500 w-5 h-5 rounded border-gray-300"
+                      />
+                      <span className="text-gray-700 text-sm">{cat}</span>
+                    </label>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-500">
+                  Select one or more categories for this advertisement.
+                </p>
+              </div>
+
               {/* Submit Button */}
               <button
                 onClick={handleSubmit}
@@ -739,6 +886,15 @@ export default function AddAds() {
                       <div className="flex items-center text-gray-500 text-xs mt-2 pt-2 border-t border-gray-100">
                         <MapPin className="w-3 h-3 mr-1" />
                         <span>Will be shown: {locationOptions.find(opt => opt.value === formData.location)?.label}</span>
+                      </div>
+                    )}
+
+                    {Array.isArray(formData.city) && formData.city.length > 0 && (
+                      <div className="flex items-center text-gray-500 text-xs mt-2 pt-2 border-t border-gray-100">
+                        <MapPin className="w-4 h-4 mr-1" />
+                        <span>
+                          Cities: {formData.city.map((c) => cityLocations.find(opt => opt.value === c)?.label || c).join(", ")}
+                        </span>
                       </div>
                     )}
                   </div>

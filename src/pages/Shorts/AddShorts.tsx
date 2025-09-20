@@ -6,6 +6,13 @@ type LinkType = {
   title: string;
 };
 
+const cityLocations = [
+  { value: "all", label: "All Cities" },
+  { value: "bikaner", label: "Bikaner" },
+  { value: "jaipur", label: "Jaipur" },
+  { value: "delhi", label: "Delhi" },
+];
+
 export default function AddShort() {
   const [links, setLinks] = useState<LinkType[]>([{ url: '', title: '' }]);
   const [mediaFile, setMediaFile] = useState<File | null>(null);
@@ -22,6 +29,7 @@ export default function AddShort() {
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState<string>("");
   const [showTagSuggestions, setShowTagSuggestions] = useState<boolean>(false);
+  const [cities, setCities] = useState<string[]>([]); // for city selection
   
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const mediaInputRef = useRef<HTMLInputElement | null>(null);
@@ -178,6 +186,20 @@ export default function AddShort() {
     setLinks(updatedLinks);
   };
 
+  // City select handler
+  const handleCitiesChange = (e: ChangeEvent<HTMLSelectElement>) => {
+    let selected: string[] = [];
+    const options = e.target.options;
+    for (let i = 0; i < options.length; i++) {
+      if (options[i].selected) selected.push(options[i].value);
+    }
+    // If "all" is selected, override all others
+    if (selected.includes("all")) {
+      selected = ["all"];
+    }
+    setCities(selected);
+  };
+
   const handleSubmit = (e: FormEvent<HTMLButtonElement>) => {
     e.preventDefault();
     // Handle form submission here
@@ -188,6 +210,7 @@ export default function AddShort() {
       mediaFile,
       thumbnailFile: thumbnailFile || autoThumbnailPreview,
       links: links.filter(link => link.url.trim() !== ''),
+      cities, // add cities to form data
     };
     console.log('Form submitted:', formData);
   };
@@ -501,6 +524,30 @@ export default function AddShort() {
                 <option value="Technology">💻 Technology</option>
                 <option value="Lifestyle">🌟 Lifestyle</option>
               </select>
+            </div>
+
+            {/* City Location Selector */}
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-gray-700">
+                Show In Cities
+              </label>
+              <select
+                name="cities"
+                multiple
+                value={cities}
+                onChange={handleCitiesChange}
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
+                style={{ minHeight: "3.5rem" }}
+              >
+                {cityLocations.map(option => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-500">
+                Hold Ctrl (Windows) or Cmd (Mac) to select multiple cities. Select "All Cities" to show everywhere.
+              </p>
             </div>
 
             {/* Links Section */}

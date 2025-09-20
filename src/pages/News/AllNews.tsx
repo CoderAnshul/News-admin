@@ -19,6 +19,9 @@ interface News {
   scheduledTime?: string;
   isTrending?: boolean;
   tags?: string[];
+  location?: string; // Add location field
+  isTopNews?: boolean; // Add this field
+  isLiveNews?: boolean; // Add this field
 }
 
 interface Category {
@@ -63,6 +66,13 @@ const predefinedTags = [
   "climate", "environment", "sustainability", "renewable", "energy", "green"
 ];
 
+const locationOptions = [
+  { value: "", label: "Select Location" },
+  { value: "bikaner", label: "Bikaner" },
+  { value: "jaipur", label: "Jaipur" },
+  { value: "delhi", label: "Delhi" },
+];
+
 export default function AllNews() {
   const [newsData, setNewsData] = useState<News[]>(initialNewsData);
   const [categoriesData, setCategoriesData] = useState<Category[]>(initialCategories);
@@ -86,7 +96,10 @@ export default function AllNews() {
     scheduledDate: "",
     scheduledTime: "",
     isTrending: false,
-    tags: []
+    tags: [],
+    location: "", // Add location to initial state
+    isTopNews: false, // Add to initial state
+    isLiveNews: false, // Add to initial state
   });
 
   const [categoryFormData, setCategoryFormData] = useState<{ name: string; description: string; color: string; parentId?: number; slug: string }>({
@@ -187,7 +200,10 @@ export default function AllNews() {
       scheduledDate: "",
       scheduledTime: "",
       isTrending: false,
-      tags: []
+      tags: [],
+      location: "", // Reset location
+      isTopNews: false, // Reset Top News
+      isLiveNews: false, // Reset Live News
     });
     setTagInput("");
     setShowTagSuggestions(false);
@@ -216,7 +232,10 @@ export default function AllNews() {
       scheduledDate: news.scheduledDate || "",
       scheduledTime: news.scheduledTime || "",
       isTrending: news.isTrending || false,
-      tags: news.tags || []
+      tags: news.tags || [],
+      location: news.location || "",
+      isTopNews: news.isTopNews || false,
+      isLiveNews: news.isLiveNews || false, // Add this line
     });
     setEditorContent(news.content || "");
     setShowAddForm(true);
@@ -239,11 +258,14 @@ export default function AllNews() {
     const newNews: News = {
       id: editingNews ? editingNews.id : Date.now(),
       ...formData,
-      title: combinedTitle, // Use the combined title here
+      title: combinedTitle,
       content: editorContent,
       date: new Date().toISOString().split('T')[0],
       // Set status to Scheduled if scheduling is enabled
-      status: formData.isScheduled ? "Scheduled" : formData.status
+      status: formData.isScheduled ? "Scheduled" : formData.status,
+      location: formData.location || "",
+      isTopNews: formData.isTopNews || false,
+      isLiveNews: formData.isLiveNews || false, // Add this line
     };
     
     if (editingNews) {
@@ -603,6 +625,24 @@ export default function AllNews() {
                     </div>
                   </div>
 
+                  {/* Location Selection */}
+                  <div>
+                    <label className="flex items-center text-sm font-semibold text-gray-700 mb-2">
+                      <Tag className="w-4 h-4 mr-2 text-blue-500" />
+                      Location
+                    </label>
+                    <select
+                      name="location"
+                      value={formData.location}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors"
+                    >
+                      {locationOptions.map(opt => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
+                    </select>
+                  </div>
+
                   {/* Tags Section */}
                   <div>
                     <label className="flex items-center text-sm font-semibold text-gray-700 mb-2">
@@ -719,6 +759,42 @@ export default function AllNews() {
                           className="w-4 h-4 text-orange-600 bg-gray-100 border-gray-300 rounded focus:ring-orange-500"
                         />
                         <span className="ml-2 text-sm text-gray-600">Mark as trending</span>
+                      </div>
+                    </div>
+
+                    {/* Top News Toggle */}
+                    <div>
+                      <label className="flex items-center text-sm font-semibold text-gray-700 mb-2">
+                        <TrendingUp className="w-4 h-4 mr-2 text-red-500" />
+                        Add to Top News
+                      </label>
+                      <div className="flex items-center">
+                        <input
+                          type="checkbox"
+                          name="isTopNews"
+                          checked={formData.isTopNews}
+                          onChange={handleInputChange}
+                          className="w-5 h-5 text-red-600 bg-gray-100 border-gray-300 rounded focus:ring-red-500"
+                        />
+                        <span className="ml-2 text-sm text-gray-600">Show this article in the Top News section</span>
+                      </div>
+                    </div>
+
+                    {/* Live News Toggle */}
+                    <div>
+                      <label className="flex items-center text-sm font-semibold text-gray-700 mb-2">
+                        <TrendingUp className="w-4 h-4 mr-2 text-green-500" />
+                        Show as Live News
+                      </label>
+                      <div className="flex items-center">
+                        <input
+                          type="checkbox"
+                          name="isLiveNews"
+                          checked={formData.isLiveNews}
+                          onChange={handleInputChange}
+                          className="w-5 h-5 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500"
+                        />
+                        <span className="ml-2 text-sm text-gray-600">Show this article in the Live News section</span>
                       </div>
                     </div>
                   </div>

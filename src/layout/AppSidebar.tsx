@@ -90,7 +90,6 @@ const navItems: NavItem[] = [
     subItems: [
       { name: "General Site Settings", path: "/settings/general" },
       { name: "SEO / Meta Settings", path: "/settings/seo" },
-      { name: "Role & Permission Control", path: "/settings/roles" },
     ],
   },
   {
