@@ -1,34 +1,38 @@
-import { Plus, Trash2, Edit3, Search, X } from "lucide-react";
-import { useState, FormEvent } from "react";
+import { Plus, Trash2, Edit3, Search, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { useState, FormEvent, useEffect } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { RootState, AppDispatch } from "../../store/slices/store";
+import { fetchCategories, createCategory, updateCategory, deleteCategory } from "../../store/slices/category";
 
 interface Category {
-  id: number;
+  _id: string;
   name: string;
-  description: string;
-  createdAt: string;
-  articles: number;
-  color: string;
-  parentId?: number;
-  slug: string;
+  description?: string;
+  color?: string;
+  status?: "active" | "inactive";
+  createdAt?: string;
+  updatedAt?: string;
+  // ...other fields as needed...
 }
 
 export default function Categories() {
-  const [categories, setCategories] = useState<Category[]>(
-    [
-      { id: 1, name: "Technology", description: "Latest tech news and updates", createdAt: "2024-01-15", articles: 45, color: "#3B82F6", slug: "technology" },
-      { id: 2, name: "Sports", description: "Sports news and events", createdAt: "2024-01-16", articles: 32, color: "#10B981", slug: "sports" },
-      { id: 3, name: "Politics", description: "Political news and analysis", createdAt: "2024-01-17", articles: 28, color: "#F59E0B", slug: "politics" },
-      { id: 4, name: "Mobile Technology", description: "Mobile and smartphone news", createdAt: "2024-01-18", articles: 15, color: "#3B82F6", parentId: 1, slug: "mobile-technology" },
-      { id: 5, name: "AI & Machine Learning", description: "Artificial Intelligence news", createdAt: "2024-01-19", articles: 22, color: "#8B5CF6", parentId: 1, slug: "ai-machine-learning" },
-    ]
-  );
+  // Redux hooks
+  const dispatch = useDispatch<AppDispatch>();
+  const { categories: categoriesRaw, loading, error, pagination } = useSelector((state: RootState) => state.category);
+  const categories = Array.isArray(categoriesRaw) ? categoriesRaw : [];
+  const [page, setPage] = useState<number>(1);
+  const limit = pagination?.limit || 10;
+  const total = pagination?.total || categories.length;
+  const pages = pagination?.pages || 1;
 
   const [showModal, setShowModal] = useState<boolean>(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>("");
-  const [formData, setFormData] = useState<{ name: string; description: string; color: string; parentId?: number; slug: string }>(
-    { name: "", description: "", color: "#3B82F6", parentId: undefined, slug: "" }
+  const [formData, setFormData] = useState<{ name: string; description: string; color: string; status: "active" | "inactive" }>(
+    { name: "", description: "", color: "#3B82F6", status: "active" }
   );
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
 
   const colorOptions = [
     { value: "#3B82F6", name: "Blue" },
@@ -54,54 +58,52 @@ export default function Categories() {
   };
 
   // Get parent category name
-  const getParentCategoryName = (parentId?: number): string => {
+  const getParentCategoryName = (parentId?: string): string => {
     if (!parentId) return "";
-    const parent = categories.find(cat => cat.id === parentId);
+    const parent = categories.find(cat => cat._id === parentId);
     return parent ? parent.name : "";
   };
 
   // Get available parent categories (excluding current category when editing)
   const getAvailableParentCategories = (): Category[] => {
-    return categories.filter(cat => 
-      cat.id !== editingCategory?.id && // Exclude current category when editing
+    return categories.filter(cat =>
+      cat._id !== editingCategory?._id &&
       !cat.parentId // Only show top-level categories as potential parents
     );
   };
 
   const filteredCategories = categories.filter(category =>
     category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    category.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (category.description || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
     getParentCategoryName(category.parentId).toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleSubmit = (e: FormEvent<HTMLButtonElement> | FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent<HTMLButtonElement> | FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!formData.name.trim()) return;
 
-    // Generate slug if not provided
-    const slug = formData.slug.trim() || generateSlug(formData.name);
-
     if (editingCategory) {
-      setCategories(prev => prev.map(cat => 
-        cat.id === editingCategory.id 
-          ? { ...cat, name: formData.name, description: formData.description, color: formData.color, parentId: formData.parentId, slug }
-          : cat
-      ));
+      // Dispatch updateCategory thunk
+      await dispatch(updateCategory({
+        id: editingCategory._id,
+        data: {
+          name: formData.name,
+          description: formData.description,
+          color: formData.color,
+          status: formData.status,
+        }
+      }));
     } else {
-      const newCategory: Category = {
-        id: Date.now(),
+      // Dispatch createCategory thunk
+      await dispatch(createCategory({
         name: formData.name,
         description: formData.description,
-        createdAt: new Date().toISOString().split('T')[0],
-        articles: 0,
         color: formData.color,
-        parentId: formData.parentId,
-        slug
-      };
-      setCategories(prev => [...prev, newCategory]);
+        status: formData.status,
+      }));
     }
 
-    setFormData({ name: "", description: "", color: "#3B82F6", parentId: undefined, slug: "" });
+    setFormData({ name: "", description: "", color: "#3B82F6", status: "active" });
     setShowModal(false);
     setEditingCategory(null);
   };
@@ -110,24 +112,35 @@ export default function Categories() {
     setEditingCategory(category);
     setFormData({ 
       name: category.name, 
-      description: category.description, 
-      color: category.color,
-      parentId: category.parentId,
-      slug: category.slug
+      description: category.description || "", 
+      color: category.color || "#3B82F6",
+      status: category.status || "active"
     });
     setShowModal(true);
   };
 
-  const handleDelete = (id: number) => {
-    if (window.confirm("Are you sure you want to delete this category? This action cannot be undone.")) {
-      setCategories(prev => prev.filter(cat => cat.id !== id));
+  const handleDelete = (category: Category) => {
+    setCategoryToDelete(category);
+    setDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (categoryToDelete) {
+      await dispatch(deleteCategory(categoryToDelete._id));
+      setDeleteModalOpen(false);
+      setCategoryToDelete(null);
     }
+  };
+
+  const cancelDelete = () => {
+    setDeleteModalOpen(false);
+    setCategoryToDelete(null);
   };
 
   const closeModal = () => {
     setShowModal(false);
     setEditingCategory(null);
-    setFormData({ name: "", description: "", color: "#3B82F6", parentId: undefined, slug: "" });
+    setFormData({ name: "", description: "", color: "#3B82F6", status: "active" });
   };
 
   // Auto-generate slug when name changes
@@ -139,9 +152,16 @@ export default function Categories() {
     }));
   };
 
+  useEffect(() => {
+    dispatch(fetchCategories({ page, limit }));
+  }, [dispatch, page, limit]);
+
   return (
     <div className="g-gray-50 min-h-screen dark:bg-gray-900">
       <div className="max-w-6xl mx-auto">
+        
+         
+
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
           <div>
@@ -162,18 +182,29 @@ export default function Categories() {
         </div>
 
         {/* Search Bar */}
-        <div className="mb-6">
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <input
-              type="text"
-              placeholder="Search categories..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-800 dark:border-gray-600 dark:text-white"
-            />
-          </div>
-        </div>
+        <div className="mb-6 flex items-center justify-between">
+  {/* Search box */}
+  <div className="relative max-w-md flex-1">
+    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+    <input
+      type="text"
+      placeholder="Search categories..."
+      value={searchTerm}
+      onChange={(e) => setSearchTerm(e.target.value)}
+      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+    />
+  </div>
+
+  {/* Total box */}
+  <div className="bg-transparent p-2 w-32 text-center">
+  <div className="text-lg text-gray-600 dark:text-gray-400">
+    Total : <span className="text-lg font-semibold text-gray-900 dark:text-white">{total}</span>
+  </div>
+  
+</div>
+
+</div>
+
 
         {/* Categories Table */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
@@ -182,19 +213,16 @@ export default function Categories() {
               <thead className="bg-gray-50 whitespace-nowrap dark:bg-gray-700">
                 <tr>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    No.
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Category Name
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Parent Category
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Slug
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Description
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Articles
+                    Status
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Created
@@ -212,8 +240,11 @@ export default function Categories() {
                     </td>
                   </tr>
                 ) : (
-                  filteredCategories.map((category) => (
-                    <tr key={category.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                  filteredCategories.map((category, idx) => (
+                    <tr key={category._id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                      <td className="px-6 py-4">
+                        {(page - 1) * limit + idx + 1}
+                      </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center">
                           <div 
@@ -225,32 +256,21 @@ export default function Categories() {
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm text-gray-600 dark:text-gray-300">
-                          {category.parentId ? (
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">
-                              {getParentCategoryName(category.parentId)}
-                            </span>
-                          ) : (
-                            <span className="text-gray-400">Main Category</span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm text-gray-600 dark:text-gray-300 font-mono bg-gray-50 dark:bg-gray-700 px-2 py-1 rounded">
-                          {category.slug}
-                        </div>
-                      </td>
+                      
                       <td className="px-6 py-4">
                         <div className="text-sm text-gray-600 dark:text-gray-300 max-w-xs truncate">
                           {category.description || "No description"}
                         </div>
                       </td>
-                      <td className="px-6 py-4">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                          {category.articles} articles
+                        <td className="px-6 py-4">
+                        <span className={`inline-block px-2 py-1 rounded text-xs font-semibold ${
+                          category.status === "active"
+                          ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                          : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                        }`}>
+                          {category.status === "active" ? "Active" : "Inactive"}
                         </span>
-                      </td>
+                        </td>
                       <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
                         {new Date(category.createdAt).toLocaleDateString()}
                       </td>
@@ -264,7 +284,7 @@ export default function Categories() {
                             <Edit3 className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() => handleDelete(category.id)}
+                            onClick={() => handleDelete(category)}
                             className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                             title="Delete category"
                           >
@@ -281,7 +301,7 @@ export default function Categories() {
         </div>
 
         {/* Stats */}
-        <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {/* <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
             <div className="text-2xl font-bold text-gray-900 dark:text-white">
               {categories.length}
@@ -306,8 +326,66 @@ export default function Categories() {
               Avg Articles/Category
             </div>
           </div>
+        </div> */}
+
+        {/* Pagination Controls */}
+        <div className="flex justify-end items-center mt-4 space-x-2">
+          <button
+            className="px-3 py-1 rounded bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 disabled:opacity-50 flex items-center"
+            disabled={page <= 1}
+            onClick={() => setPage(page - 1)}
+            aria-label="Previous Page"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <span className="px-2 text-gray-700 dark:text-gray-200">
+            {page} / {pages}
+          </span>
+          <button
+            className="px-3 py-1 rounded bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 disabled:opacity-50 flex items-center"
+            disabled={page >= pages}
+            onClick={() => setPage(page + 1)}
+            aria-label="Next Page"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {deleteModalOpen && categoryToDelete && (
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm bg-opacity-50 flex items-center justify-center p-4 z-[100010]">
+          <div className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-md shadow-lg p-6 relative">
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
+              Delete Category
+            </h2>
+            <p className="mb-6 text-gray-700 dark:text-gray-300">
+              Are you sure you want to delete <span className="font-semibold">{categoryToDelete.name}</span>? This action cannot be undone.
+            </p>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={cancelDelete}
+                className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+            <button
+              onClick={cancelDelete}
+              className="absolute top-4 right-4 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              title="Close"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Modal */}
       {showModal && (
@@ -332,7 +410,7 @@ export default function Categories() {
                   <input
                     type="text"
                     value={formData.name}
-                    onChange={(e) => handleNameChange(e.target.value)}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         e.preventDefault();
@@ -342,43 +420,6 @@ export default function Categories() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     placeholder="Enter category name"
                   />
-                </div>
-
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Parent Category
-                  </label>
-                  <select
-                    value={formData.parentId || ""}
-                    onChange={(e) => setFormData({ ...formData, parentId: e.target.value ? Number(e.target.value) : undefined })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  >
-                    <option value="">No Parent (Main Category)</option>
-                    {getAvailableParentCategories().map((category) => (
-                      <option key={category.id} value={category.id}>
-                        {category.name}
-                      </option>
-                    ))}
-                  </select>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Select a parent category to create a subcategory
-                  </p>
-                </div>
-
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Slug *
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.slug}
-                    onChange={(e) => setFormData({ ...formData, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-') })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white font-mono text-sm"
-                    placeholder="category-slug"
-                  />
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    URL-friendly version of the category name. Auto-generated if left empty.
-                  </p>
                 </div>
 
                 <div className="mb-4">
@@ -394,7 +435,7 @@ export default function Categories() {
                   />
                 </div>
 
-                <div className="mb-6">
+                <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Category Color *
                   </label>
@@ -444,6 +485,21 @@ export default function Categories() {
                     </div>
                   </div>
                 </div>
+
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Status *
+                  </label>
+                  <select
+                    value={formData.status}
+                    onChange={(e) => setFormData({ ...formData, status: e.target.value as "active" | "inactive" })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  >
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                </div>
+
                 <div className="flex justify-end  z-10 bg-white w-full space-x-3">
                   <button
                     onClick={closeModal}

@@ -25,9 +25,18 @@ export default function SignInForm() {
     try {
       const result = await dispatch(login({ email, password })).unwrap();
 
-      if (result && result.admin && result.tokens) {
-        // Already stored in localStorage by thunk
-        navigate("/", { replace: true }); // Redirect to home page
+      // Accept both admin/user and accessToken for compatibility
+      if (
+        (result && result.user && result.accessToken) ||
+        (result && result.admin && result.tokens)
+      ) {
+        // If not already stored by thunk, store tokens
+        if (result.accessToken) localStorage.setItem("accessToken", result.accessToken);
+        if (result.refreshToken) localStorage.setItem("refreshToken", result.refreshToken);
+        if (result.user) localStorage.setItem("user", JSON.stringify(result.user));
+        if (result.admin) localStorage.setItem("user", JSON.stringify(result.admin));
+        // Redirect to Home page
+        navigate("/", { replace: true });
       }
     } catch (err: any) {
       console.error("Login failed:", err);

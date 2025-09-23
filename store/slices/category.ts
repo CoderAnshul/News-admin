@@ -1,6 +1,8 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import axiosInstance from "../../services/axiosConfig";
 
+const API_BASE_URL = import.meta.env.VITE_BASE_URL || "http://localhost:4000";
+
 export interface Category {
   _id: string;
   name: string;
@@ -16,6 +18,12 @@ interface CategoryState {
   currentCategory: Category | null;
   loading: boolean;
   error: string | null;
+  pagination?: {
+    total: number;
+    page: number;
+    pages: number;
+    limit: number;
+  };
 }
 
 const initialState: CategoryState = {
@@ -23,6 +31,7 @@ const initialState: CategoryState = {
   currentCategory: null,
   loading: false,
   error: null,
+  pagination: undefined,
 };
 
 // Get access token from localStorage
@@ -33,15 +42,23 @@ const getAuthHeader = () => {
 
 // **Thunks**
 export const fetchCategories = createAsyncThunk<
-  Category[],
-  void,
+  { categories: Category[]; pagination: any },
+  { page?: number; limit?: number } | void,
   { rejectValue: string }
->("category/fetchAll", async (_, { rejectWithValue }) => {
+>("category/fetchAll", async (params = {}, { rejectWithValue }) => {
   try {
-    const response = await axiosInstance.get("/category", {
-      headers: getAuthHeader(),
-    });
-    return response.data.data || [];
+    const { page = 1, limit = 10 } = params as any;
+    const response = await axiosInstance.get(
+      `${API_BASE_URL}/category?page=${page}&limit=${limit}`,
+      {
+        headers: getAuthHeader(),
+      }
+    );
+    const data = response.data.data;
+    return {
+      categories: Array.isArray(data?.categories) ? data.categories : [],
+      pagination: data?.pagination || { total: 0, page: 1, pages: 1, limit: 10 },
+    };
   } catch (err: any) {
     return rejectWithValue(err.response?.data?.message || err.message);
   }
@@ -53,7 +70,7 @@ export const createCategory = createAsyncThunk<
   { rejectValue: string }
 >("category/create", async (payload, { rejectWithValue }) => {
   try {
-    const response = await axiosInstance.post("/category", payload, {
+    const response = await axiosInstance.post(`${API_BASE_URL}/category`, payload, {
       headers: {
         "Content-Type": "application/json",
         ...getAuthHeader(),
@@ -71,7 +88,7 @@ export const updateCategory = createAsyncThunk<
   { rejectValue: string }
 >("category/update", async ({ id, data }, { rejectWithValue }) => {
   try {
-    const response = await axiosInstance.put(`/category/${id}`, data, {
+    const response = await axiosInstance.put(`${API_BASE_URL}/category/${id}`, data, {
       headers: {
         "Content-Type": "application/json",
         ...getAuthHeader(),
@@ -89,7 +106,7 @@ export const deleteCategory = createAsyncThunk<
   { rejectValue: string }
 >("category/delete", async (id, { rejectWithValue }) => {
   try {
-    await axiosInstance.delete(`/category/${id}`, {
+    await axiosInstance.delete(`${API_BASE_URL}/category/${id}`, {
       headers: getAuthHeader(),
     });
     return id;
@@ -116,7 +133,8 @@ const categorySlice = createSlice({
       })
       .addCase(fetchCategories.fulfilled, (state, action) => {
         state.loading = false;
-        state.categories = action.payload;
+        state.categories = action.payload.categories;
+        state.pagination = action.payload.pagination;
       })
       .addCase(fetchCategories.rejected, (state, action) => {
         state.loading = false;
