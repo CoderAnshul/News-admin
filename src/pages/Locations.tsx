@@ -1,66 +1,82 @@
-import { Plus, Trash2, Edit3, Search, MapPin, Globe } from "lucide-react";
-import { useState, FormEvent } from "react";
+import { Plus, Trash2, Edit3, Search, MapPin, Globe, X } from "lucide-react";
+import { useState, FormEvent, useEffect } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { RootState, AppDispatch } from "../../store/slices/store";
+import { fetchLocations, createLocation, updateLocation, deleteLocation } from "../../store/slices/locations";
 
 interface Location {
-  id: number;
+  _id: string;
   name: string;
   country: string;
   region: string;
   description: string;
+  status: "active" | "inactive";
   createdAt: string;
-  articles: number;
-  active: boolean;
+  updatedAt?: string;
 }
 
 export default function Locations() {
-  const [locations, setLocations] = useState<Location[]>(
-    [
-      { id: 1, name: "Bikaner", country: "India", region: "Asia", description: "Coverage for Bikaner city and nearby areas", createdAt: "2024-01-15", articles: 12, active: true },
-      { id: 2, name: "Jaipur", country: "India", region: "Asia", description: "Coverage for Jaipur city and nearby areas", createdAt: "2024-01-16", articles: 20, active: true },
-    ]
-  );
+  // Redux hooks
+  const dispatch = useDispatch<AppDispatch>();
+  const { locations: locationsRaw, loading, error, pagination } = useSelector((state: RootState) => state.location);
+  const locations: Location[] = Array.isArray(locationsRaw) ? locationsRaw : [];
+  const [page, setPage] = useState<number>(1);
+  const limit = pagination?.limit || 10;
+  const pages = pagination?.pages || 1;
 
   const [showModal, setShowModal] = useState<boolean>(false);
   const [editingLocation, setEditingLocation] = useState<Location | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [filterRegion, setFilterRegion] = useState<string>("all");
-  const [formData, setFormData] = useState<{ name: string; country: string; region: string; description: string; active: boolean }>(
-    { name: "", country: "", region: "", description: "", active: true }
+  const [formData, setFormData] = useState<{ name: string; country: string; region: string; description: string; status: "active" | "inactive" }>(
+    { name: "", country: "", region: "", description: "", status: "active" }
   );
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [locationToDelete, setLocationToDelete] = useState<Location | null>(null);
 
-  const regions = ["North America", "South America", "Europe", "Africa", "Asia", "Oceania"];
+  useEffect(() => {
+    dispatch(fetchLocations({ page, limit }));
+  }, [dispatch, page, limit]);
 
+  // Filtered locations (search and region)
   const filteredLocations = locations.filter(location => {
-    const matchesSearch = location.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         location.country.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         location.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch =
+      location.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (location.country || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (location.description || "").toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRegion = filterRegion === "all" || location.region === filterRegion;
     return matchesSearch && matchesRegion;
   });
 
-  const handleSubmit = (e: FormEvent<HTMLButtonElement> | FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent<HTMLButtonElement> | FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!formData.name.trim() || !formData.country.trim() || !formData.region.trim()) return;
 
     if (editingLocation) {
-      setLocations(prev => prev.map(loc => 
-        loc.id === editingLocation.id 
-          ? { ...loc, ...formData }
-          : loc
-      ));
+      await dispatch(updateLocation({
+        id: editingLocation._id,
+        data: {
+          name: formData.name,
+          country: formData.country,
+          region: formData.region,
+          description: formData.description,
+          status: formData.status,
+        }
+      }));
     } else {
-      const newLocation: Location = {
-        id: Date.now(),
-        ...formData,
-        createdAt: new Date().toISOString().split('T')[0],
-        articles: 0
-      };
-      setLocations(prev => [...prev, newLocation]);
+      await dispatch(createLocation({
+        name: formData.name,
+        country: formData.country,
+        region: formData.region,
+        description: formData.description,
+        status: formData.status,
+      }));
     }
 
-    setFormData({ name: "", country: "", region: "", description: "", active: true });
+    setFormData({ name: "", country: "", region: "", description: "", status: "active" });
     setShowModal(false);
     setEditingLocation(null);
+    dispatch(fetchLocations({ page, limit }));
   };
 
   const handleEdit = (location: Location) => {
@@ -70,27 +86,34 @@ export default function Locations() {
       country: location.country,
       region: location.region,
       description: location.description,
-      active: location.active
+      status: location.status
     });
     setShowModal(true);
   };
 
-  const handleDelete = (id: number) => {
-    if (window.confirm("Are you sure you want to delete this location? This action cannot be undone.")) {
-      setLocations(prev => prev.filter(loc => loc.id !== id));
+  const handleDelete = (location: Location) => {
+    setLocationToDelete(location);
+    setDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (locationToDelete) {
+      await dispatch(deleteLocation(locationToDelete._id));
+      setDeleteModalOpen(false);
+      setLocationToDelete(null);
+      dispatch(fetchLocations({ page, limit }));
     }
   };
 
-  const toggleActive = (id: number) => {
-    setLocations(prev => prev.map(loc => 
-      loc.id === id ? { ...loc, active: !loc.active } : loc
-    ));
+  const cancelDelete = () => {
+    setDeleteModalOpen(false);
+    setLocationToDelete(null);
   };
 
   const closeModal = () => {
     setShowModal(false);
     setEditingLocation(null);
-    setFormData({ name: "", country: "", region: "", description: "", active: true });
+    setFormData({ name: "", country: "", region: "", description: "", status: "active" });
   };
 
   return (
@@ -128,16 +151,13 @@ export default function Locations() {
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-800 dark:border-gray-600 dark:text-white"
             />
           </div>
-          <select
-            value={filterRegion}
-            onChange={(e) => setFilterRegion(e.target.value)}
+          <input
+            type="text"
+            value={filterRegion === "all" ? "" : filterRegion}
+            onChange={(e) => setFilterRegion(e.target.value || "all")}
             className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-800 dark:border-gray-600 dark:text-white"
-          >
-            <option value="all">All Regions</option>
-            {regions.map(region => (
-              <option key={region} value={region}>{region}</option>
-            ))}
-          </select>
+            placeholder="Filter by region"
+          />
         </div>
 
         {/* Locations Table */}
@@ -159,9 +179,6 @@ export default function Locations() {
                     Description
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Articles
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Status
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
@@ -178,7 +195,7 @@ export default function Locations() {
                   </tr>
                 ) : (
                   filteredLocations.map((location) => (
-                    <tr key={location.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                    <tr key={location._id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                       <td className="px-6 py-4">
                         <div className="flex items-center">
                           <MapPin className="w-4 h-4 text-gray-400 mr-2" />
@@ -203,21 +220,13 @@ export default function Locations() {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                          {location.articles} articles
+                        <span className={`inline-block px-2 py-1 rounded text-xs font-semibold ${
+                          location.status === "active"
+                            ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                            : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
+                        }`}>
+                          {location.status === "active" ? "Active" : "Inactive"}
                         </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <button
-                          onClick={() => toggleActive(location.id)}
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors ${
-                            location.active
-                              ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 hover:bg-green-200"
-                              : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200"
-                          }`}
-                        >
-                          {location.active ? "Active" : "Inactive"}
-                        </button>
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center space-x-2">
@@ -229,7 +238,7 @@ export default function Locations() {
                             <Edit3 className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() => handleDelete(location.id)}
+                            onClick={() => handleDelete(location)}
                             className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                             title="Delete location"
                           >
@@ -257,7 +266,7 @@ export default function Locations() {
           </div>
           <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
             <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-              {locations.filter(loc => loc.active).length}
+              {locations.filter(loc => loc.status === "active").length}
             </div>
             <div className="text-sm text-gray-600 dark:text-gray-400">
               Active Locations
@@ -322,16 +331,13 @@ export default function Locations() {
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Region *
                   </label>
-                  <select
+                  <input
+                    type="text"
                     value={formData.region}
                     onChange={(e) => setFormData({ ...formData, region: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  >
-                    <option value="">Select a region</option>
-                    {regions.map(region => (
-                      <option key={region} value={region}>{region}</option>
-                    ))}
-                  </select>
+                    placeholder="e.g., Maharashtra"
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -349,8 +355,8 @@ export default function Locations() {
                   <input
                     type="checkbox"
                     id="active"
-                    checked={formData.active}
-                    onChange={(e) => setFormData({ ...formData, active: e.target.checked })}
+                    checked={formData.status === "active"}
+                    onChange={(e) => setFormData({ ...formData, status: e.target.checked ? "active" : "inactive" })}
                     className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                   />
                   <label htmlFor="active" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
@@ -373,6 +379,41 @@ export default function Locations() {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteModalOpen && locationToDelete && (
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm bg-opacity-50 flex items-center justify-center p-4 z-[100010]">
+          <div className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-md shadow-lg p-6 relative">
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
+              Delete Location
+            </h2>
+            <p className="mb-6 text-gray-700 dark:text-gray-300">
+              Are you sure you want to delete <span className="font-semibold">{locationToDelete.name}</span>? This action cannot be undone.
+            </p>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={cancelDelete}
+                className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+            <button
+              onClick={cancelDelete}
+              className="absolute top-4 right-4 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              title="Close"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
         </div>
       )}

@@ -331,26 +331,28 @@ export default function Categories() {
         </div> */}
 
         {/* Pagination Controls */}
-        <div className="flex justify-end items-center mt-4 space-x-2">
-          <button
-            className="px-3 py-1 rounded bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 disabled:opacity-50 flex items-center"
-            disabled={page <= 1}
-            onClick={() => setPage(page - 1)}
-            aria-label="Previous Page"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-          <span className="px-2 text-gray-700 dark:text-gray-200">
-            {page} / {pages}
-          </span>
-          <button
-            className="px-3 py-1 rounded bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 disabled:opacity-50 flex items-center"
-            disabled={page >= pages}
-            onClick={() => setPage(page + 1)}
-            aria-label="Next Page"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </button>
+        <div className="flex justify-end items-center mt-4">
+          <div className="flex  rounded-lg  px-2 py-1 space-x-2">
+            <button
+              className="px-3 py-1 rounded bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 disabled:opacity-50 flex items-center"
+              disabled={page <= 1}
+              onClick={() => setPage(page - 1)}
+              aria-label="Previous Page"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <span className="px-4 py-1 flex items-center text-lg font-semibold text-gray-900 dark:text-white min-w-[40px] justify-center">
+              {page}
+            </span>
+            <button
+              className="px-3 py-1 rounded bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 disabled:opacity-50 flex items-center"
+              disabled={page >= pages}
+              onClick={() => setPage(page + 1)}
+              aria-label="Next Page"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
 
