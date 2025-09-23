@@ -1,4 +1,6 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router";
+import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from "react-router-dom";
+import { Provider } from "react-redux";
+import store from "../store/slices/store";
 import SignIn from "./pages/AuthPages/SignIn";
 import SignUp from "./pages/AuthPages/SignUp";
 import NotFound from "./pages/OtherPage/NotFound";
@@ -32,71 +34,79 @@ import UserPage from "./pages/User";
 import SubscriptionPlan from "./pages/SubscriptionPlan";
 import ViewAd from "./pages/Ads/ViewAd";
 
+// RequireAuth component
+function RequireAuth() {
+  const isAuthenticated = !!localStorage.getItem("accessToken");
+  return isAuthenticated ? <Outlet /> : <Navigate to="/signin" replace />;
+}
+
 export default function App() {
   return (
-    <>
+    <Provider store={store}>
       <Router>
         <ScrollToTop />
         <Routes>
-          {/* Dashboard Layout */}
-          <Route element={<AppLayout />}>
-            <Route index path="/" element={<Home />} />
+          {/* Protected Dashboard Layout */}
+          <Route element={<RequireAuth />}>
+            <Route element={<AppLayout />}>
+              <Route index path="/" element={<Home />} />
 
-            {/* Others Page */}
-            <Route path="/profile" element={<UserProfiles />} />
-            <Route path="/calendar" element={<Calendar />} />
-            <Route path="/blank" element={<Blank />} />
+              {/* Others Page */}
+              <Route path="/profile" element={<UserProfiles />} />
+              <Route path="/calendar" element={<Calendar />} />
+              <Route path="/blank" element={<Blank />} />
 
-            {/* Forms */}
-            <Route path="/form-elements" element={<FormElements />} />
+              {/* Forms */}
+              <Route path="/form-elements" element={<FormElements />} />
 
-            {/* Tables */}
-            <Route path="/basic-tables" element={<BasicTables />} />
+              {/* Tables */}
+              <Route path="/basic-tables" element={<BasicTables />} />
 
-            {/* Ui Elements */}
-            <Route path="/alerts" element={<Alerts />} />
-            <Route path="/avatars" element={<Avatars />} />
-            <Route path="/badge" element={<Badges />} />
-            <Route path="/buttons" element={<Buttons />} />
-            <Route path="/images" element={<Images />} />
-            <Route path="/videos" element={<Videos />} />
+              {/* Ui Elements */}
+              <Route path="/alerts" element={<Alerts />} />
+              <Route path="/avatars" element={<Avatars />} />
+              <Route path="/badge" element={<Badges />} />
+              <Route path="/buttons" element={<Buttons />} />
+              <Route path="/images" element={<Images />} />
+              <Route path="/videos" element={<Videos />} />
 
-            {/* Charts */}
-            <Route path="/line-chart" element={<LineChart />} />
-            <Route path="/bar-chart" element={<BarChart />} />
+              {/* Charts */}
+              <Route path="/line-chart" element={<LineChart />} />
+              <Route path="/bar-chart" element={<BarChart />} />
 
-            {/* Shorts */}
-            <Route path="/shorts/all-shorts" element={<AllShorts />} />
-            <Route path="/shorts/add-shorts" element={<AddShorts />} />
-            <Route path="/shorts/edit/" element={<EditShort />} />
+              {/* Shorts */}
+              <Route path="/shorts/all-shorts" element={<AllShorts />} />
+              <Route path="/shorts/add-shorts" element={<AddShorts />} />
+              <Route path="/shorts/edit/" element={<EditShort />} />
 
-            {/* Manage Categories and Locations */}
-            <Route path="/categories" element={<Categories />} />
-            <Route path="/locations" element={<Locations />} />
+              {/* Manage Categories and Locations */}
+              <Route path="/categories" element={<Categories />} />
+              <Route path="/locations" element={<Locations />} />
 
-            {/* Advertisements */}
-            <Route path="/ads/add" element={<AddAds />} />
-            <Route path="/ads/manage" element={<AddAds />} />
-            <Route path="/ads/view/:id" element={<ViewAd />} />
-            <Route path="/ads/edit/:id" element={<AddAds />} />
+              {/* Advertisements */}
+              <Route path="/ads/add" element={<AddAds />} />
+              <Route path="/ads/manage" element={<AddAds />} />
+              <Route path="/ads/view/:id" element={<ViewAd />} />
+              <Route path="/ads/edit/:id" element={<AddAds />} />
 
-            {/* News Management */}
-            <Route path="/news/all" element={<AllNews />} />
+              {/* News Management */}
+              <Route path="/news/all" element={<AllNews />} />
 
-            {/* Epaper */}
-            <Route path="/epaper" element={<Epaper />} />
+              {/* Epaper */}
+              <Route path="/epaper" element={<Epaper />} />
 
-            {/* Push Notifications */}
-            <Route path="/notifications" element={<PushNotifications />} />
+              {/* Push Notifications */}
+              <Route path="/notifications" element={<PushNotifications />} />
 
-            {/* FAQ Page */}
-            <Route path="/faq" element={<FAQ />} />
+              {/* FAQ Page */}
+              <Route path="/faq" element={<FAQ />} />
 
-            {/* User Page */}
-            <Route path="/users" element={<UserPage />} />
+              {/* User Page */}
+              <Route path="/users" element={<UserPage />} />
 
-            {/* Subscription Plans */}
-            <Route path="/subscription-plans" element={<SubscriptionPlan />} />
+              {/* Subscription Plans */}
+              <Route path="/subscription-plans" element={<SubscriptionPlan />} />
+            </Route>
           </Route>
 
           {/* Auth Layout */}
@@ -107,6 +117,6 @@ export default function App() {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Router>
-    </>
+    </Provider>
   );
 }
