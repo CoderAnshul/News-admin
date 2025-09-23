@@ -129,6 +129,8 @@ export default function Categories() {
       await dispatch(deleteCategory(categoryToDelete._id));
       setDeleteModalOpen(false);
       setCategoryToDelete(null);
+      // Refresh the list after delete
+      dispatch(fetchCategories({ page, limit }));
     }
   };
 
