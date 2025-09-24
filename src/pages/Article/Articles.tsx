@@ -1,7 +1,7 @@
 import { useState, useEffect, FormEvent } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState, AppDispatch } from "../../../store/slices/store";
-import { fetchArticles } from "../../../store/slices/articles";
+import { fetchArticles, deleteArticle } from "../../../store/slices/articles";
 import { Plus, Edit3, Trash2, Search, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -38,6 +38,8 @@ export default function Articles() {
   const total = pagination.total || articles.length;
 
   const [searchTerm, setSearchTerm] = useState<string>("");
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [articleToDelete, setArticleToDelete] = useState<Article | null>(null);
 
   useEffect(() => {
     dispatch(fetchArticles({ page, limit }));
@@ -50,6 +52,26 @@ export default function Articles() {
     (article.author || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
     (article.excerpt || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const handleDelete = (article: Article) => {
+    setArticleToDelete(article);
+    setDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (articleToDelete) {
+      await dispatch(deleteArticle(articleToDelete._id) as any);
+      setDeleteModalOpen(false);
+      setArticleToDelete(null);
+      // Refresh the list after delete
+      dispatch(fetchArticles({ page, limit }) as any);
+    }
+  };
+
+  const cancelDelete = () => {
+    setDeleteModalOpen(false);
+    setArticleToDelete(null);
+  };
 
   return (
     <div className="bg-gray-50 min-h-screen dark:bg-gray-900">
@@ -203,7 +225,7 @@ export default function Articles() {
                             <Edit3 className="w-4 h-4" />
                           </button>
                           <button
-                            // onClick={() => handleDelete(article)}
+                            onClick={() => handleDelete(article)}
                             className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                             title="Delete article"
                           >
@@ -244,6 +266,41 @@ export default function Articles() {
           </div>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {deleteModalOpen && articleToDelete && (
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm bg-opacity-50 flex items-center justify-center p-4 z-[100010]">
+          <div className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-md shadow-lg p-6 relative">
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
+              Delete Article
+            </h2>
+            <p className="mb-6 text-gray-700 dark:text-gray-300">
+              Are you sure you want to delete <span className="font-semibold">{articleToDelete.articleTitle}</span>? This action cannot be undone.
+            </p>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={cancelDelete}
+                className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+            <button
+              onClick={cancelDelete}
+              className="absolute top-4 right-4 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              title="Close"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

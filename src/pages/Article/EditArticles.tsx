@@ -38,7 +38,10 @@ const EditArticles = () => {
     featuredImage: null as File | null,
   });
 
+  const IMAGE_BASE_URL = import.meta.env.VITE_IMAGE_URL || "http://localhost:4000/uploads";
+
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [oldImage, setOldImage] = useState<string | null>(null);
 
   useEffect(() => {
     dispatch(fetchCategories() as any);
@@ -64,7 +67,8 @@ const EditArticles = () => {
           author: article.author || '',
           featuredImage: null,
         });
-        setImagePreview(article.featuredImage ? article.featuredImage : null);
+        setOldImage(article.featuredImage ? article.featuredImage : null);
+        setImagePreview(null); // always reset preview on load
       }
     }
   }, [id, articles]);
@@ -83,9 +87,16 @@ const EditArticles = () => {
         setImagePreview(reader.result as string);
       };
       reader.readAsDataURL(file);
+      setOldImage(null); // clear old image when new selected
     } else {
       setImagePreview(null);
     }
+  };
+
+  const handleRemoveImage = () => {
+    setForm(prev => ({ ...prev, featuredImage: null }));
+    setImagePreview(null);
+    setOldImage(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -99,6 +110,10 @@ const EditArticles = () => {
         formData.append(key, value as string);
       }
     });
+    // If no new image, send old image filename
+    if (!form.featuredImage && oldImage) {
+      formData.append('featuredImage', oldImage);
+    }
     try {
       await dispatch(updateArticle({ id, formData }) as any);
       setShowSuccess(true);
@@ -113,7 +128,19 @@ const EditArticles = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-      <div className=" mx-auto p-6">
+      <div className="mx-auto p-6">
+        {/* Back Button */}
+        <button
+          type="button"
+          onClick={() => navigate("/articles")}
+          className="mb-6 inline-flex items-center px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600 rounded-lg transition-colors"
+        >
+          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+          Back
+        </button>
+
         {/* Header Section */}
         <div className="mb-8">
           <div className="flex items-center space-x-3 mb-4">
@@ -312,23 +339,29 @@ const EditArticles = () => {
                   Upload Featured Image <span className="text-red-500">*</span>
                 </label>
                 <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-6 text-center hover:border-blue-500 dark:hover:border-blue-400 transition-colors">
-                  {imagePreview ? (
+                  {(imagePreview || oldImage) ? (
                     <div className="space-y-4">
                       <img 
-                        src={imagePreview} 
-                        alt="Preview" 
+                        src={
+                          imagePreview
+                            ? imagePreview
+                            : oldImage
+                              ? (oldImage.startsWith("http://") || oldImage.startsWith("https://") || oldImage.startsWith(IMAGE_BASE_URL)
+                                  ? oldImage
+                                  : `${IMAGE_BASE_URL}/${oldImage}`)
+                              : ""
+                        }
+                        alt="Preview"
                         className="mx-auto max-h-48 rounded-lg shadow-lg"
                       />
                       <div className="space-y-2">
                         <p className="text-sm text-gray-600 dark:text-gray-400">
-                          {form.featuredImage?.name}
+                          {form.featuredImage?.name ||
+                            (oldImage ? oldImage.split('/').pop() : '')}
                         </p>
                         <button
                           type="button"
-                          onClick={() => {
-                            setForm(prev => ({ ...prev, featuredImage: null }));
-                            setImagePreview(null);
-                          }}
+                          onClick={handleRemoveImage}
                           className="text-red-500 hover:text-red-700 text-sm font-medium"
                         >
                           Remove Image

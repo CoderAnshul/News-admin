@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { createArticle } from '../../../store/slices/articles';
 import { fetchCategories } from '../../../store/slices/category';
-import { RootState } from '../../../store';
+import { RootState } from '../../../store/slices/store';
 import { 
   Save, 
   Upload, 
@@ -16,13 +16,16 @@ import {
   CheckCircle,
   X
 } from 'lucide-react';
+import { useNavigate } from "react-router-dom";
 
 const AddArticles = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { loading, error } = useSelector((state: RootState) => state.article);
   const { categories } = useSelector((state: RootState) => state.category);
   
   const [showSuccess, setShowSuccess] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   useEffect(() => {
     dispatch(fetchCategories() as any);
@@ -33,7 +36,7 @@ const AddArticles = () => {
     restHeading: '',
     articleTitle: '',
     category: '',
-    status: 'draft',
+    status: 'published',
     excerpt: '',
     content: '',
     author: '',
@@ -65,6 +68,21 @@ const AddArticles = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // Check required fields
+    if (
+      !form.coloredHeading.trim() ||
+      !form.restHeading.trim() ||
+      !form.articleTitle.trim() ||
+      !form.category.trim() ||
+      !form.excerpt.trim() ||
+      !form.content.trim() ||
+      !form.author.trim() ||
+      !form.featuredImage
+    ) {
+      setFormError("Please fill all required fields and select an image.");
+      return;
+    }
+    setFormError(null);
     const formData = new FormData();
     Object.entries(form).forEach(([key, value]) => {
       if (key === 'featuredImage' && value) {
@@ -100,7 +118,19 @@ const AddArticles = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-      <div className=" mx-auto p-6">
+      <div className="mx-auto p-6">
+        {/* Back Button */}
+        <button
+          type="button"
+          onClick={() => navigate("/articles")}
+          className="mb-6 inline-flex items-center px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600 rounded-lg transition-colors"
+        >
+          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+          Back
+        </button>
+
         {/* Header Section */}
         <div className="mb-8">
           <div className="flex items-center space-x-3 mb-4">
@@ -389,6 +419,25 @@ const AddArticles = () => {
               <button
                 onClick={() => setShowSuccess(false)}
                 className="ml-2 hover:bg-green-600 p-1 rounded"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Error Message for Form Submission */}
+        {formError && (
+          <div className="fixed top-4 right-4 bg-red-500 text-white px-6 py-4 rounded-xl shadow-lg z-50">
+            <div className="flex items-center space-x-3">
+              <AlertCircle className="w-6 h-6" />
+              <div>
+                <p className="font-semibold">Error</p>
+                <p className="text-sm opacity-90">{formError}</p>
+              </div>
+              <button
+                onClick={() => setFormError(null)}
+                className="ml-2 hover:bg-red-600 p-1 rounded"
               >
                 <X className="w-4 h-4" />
               </button>
