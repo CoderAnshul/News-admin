@@ -1,7 +1,7 @@
 import { useState, useEffect, FormEvent } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { RootState, AppDispatch } from "../../store/slices/store";
-import { fetchArticles } from "../../store/slices/articles";
+import { RootState, AppDispatch } from "../../../store/slices/store";
+import { fetchArticles } from "../../../store/slices/articles";
 import { Plus, Edit3, Trash2, Search, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -196,7 +196,7 @@ export default function Articles() {
                       <td className="px-6 py-4">
                         <div className="flex items-center space-x-2">
                           <button
-                            // onClick={() => handleEdit(article)}
+                            onClick={() => navigate(`/articles/edit/${article._id}`)}
                             className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
                             title="Edit article"
                           >
