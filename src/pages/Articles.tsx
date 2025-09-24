@@ -1,0 +1,226 @@
+import { useState, useEffect, FormEvent } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { RootState, AppDispatch } from "../../store/slices/store";
+import { fetchArticles } from "../../store/slices/articles";
+import { Plus, Edit3, Trash2, Search, X, ChevronLeft, ChevronRight } from "lucide-react";
+
+interface Article {
+  _id: string;
+  coloredHeading?: string;
+  restHeading?: string;
+  articleTitle?: string;
+  author?: string;
+  category?: { _id: string; name: string } | string | null; // updated type
+  status?: "draft" | "published";
+  excerpt?: string;
+  content?: string;
+  featuredImage?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export default function Articles() {
+  const dispatch = useDispatch<AppDispatch>();
+  // Add a fallback to avoid destructuring undefined
+  const articleState = useSelector((state: RootState) => state.article) || {};
+  const {
+    articles: articlesRaw = [],
+    loading = false,
+    error = null,
+    pagination = { total: 0, page: 1, pages: 1, limit: 10 }
+  } = articleState;
+  const articles: Article[] = Array.isArray(articlesRaw) ? articlesRaw : [];
+  const [page, setPage] = useState<number>(1);
+  const limit = pagination.limit || 10;
+  const pages = pagination.pages || 1;
+  const total = pagination.total || articles.length;
+
+  const [searchTerm, setSearchTerm] = useState<string>("");
+
+  useEffect(() => {
+    dispatch(fetchArticles({ page, limit }));
+  }, [dispatch, page, limit]);
+
+  const filteredArticles = articles.filter(article =>
+    (article.coloredHeading || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (article.restHeading || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (article.articleTitle || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (article.author || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (article.excerpt || "").toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  return (
+    <div className="bg-gray-50 min-h-screen dark:bg-gray-900">
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+              Manage Articles
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400">
+              Create, edit, and organize your news articles
+            </p>
+          </div>
+          <button
+            // onClick={} // Add modal logic if needed
+            className="mt-4 sm:mt-0 inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200 shadow-lg hover:shadow-xl"
+          >
+            <Plus className="w-5 h-5 mr-2" />
+            Add Article
+          </button>
+        </div>
+
+        {/* Stats */}
+        <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
+            <div className="text-2xl font-bold text-gray-900 dark:text-white">
+              {articles.length}
+            </div>
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+              Total Articles
+            </div>
+          </div>
+          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
+            <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+              {articles.filter(a => a.status === "published").length}
+            </div>
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+              Published
+            </div>
+          </div>
+          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
+            <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
+              {articles.filter(a => a.status === "draft").length}
+            </div>
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+              Drafts
+            </div>
+          </div>
+        </div>
+
+        {/* Search and Total */}
+        <div className="mb-6 flex items-center justify-between mt-10">
+          <div className="relative max-w-md flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <input
+              type="text"
+              placeholder="Search articles..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+            />
+          </div>
+          <div className="bg-transparent p-2 w-32 text-center">
+            <div className="text-lg text-gray-600 dark:text-gray-400">
+              Total : <span className="text-lg font-semibold text-gray-900 dark:text-white">{total}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Articles Table */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 dark:bg-gray-700">
+                <tr>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">No.</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Colored Heading</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Rest Heading</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Title</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Author</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Category</th> {/* new column */}
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Created</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200 dark:divide-gray-600">
+                {filteredArticles.length === 0 ? (
+                  <tr>
+                    <td colSpan={9} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                      {searchTerm ? "No articles found matching your search." : "No articles created yet."}
+                    </td>
+                  </tr>
+                ) : (
+                  filteredArticles.map((article, idx) => (
+                    <tr key={article._id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                      <td className="px-6 py-4">{(page - 1) * limit + idx + 1}</td>
+                      <td className="px-6 py-4">{article.coloredHeading}</td>
+                      <td className="px-6 py-4">{article.restHeading}</td>
+                      <td className="px-6 py-4">{article.articleTitle}</td>
+                      <td className="px-6 py-4">{article.author}</td>
+                      <td className="px-6 py-4">
+                        {/* Show category name if object, else show string */}
+                        {typeof article.category === "object" && article.category !== null
+                          ? article.category.name
+                          : typeof article.category === "string"
+                            ? article.category
+                            : ""}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-block px-2 py-1 rounded text-xs font-semibold ${
+                          article.status === "published"
+                            ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                            : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+                        }`}>
+                          {article.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
+                        {article.createdAt ? new Date(article.createdAt).toLocaleDateString() : ""}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center space-x-2">
+                          <button
+                            // onClick={() => handleEdit(article)}
+                            className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                            title="Edit article"
+                          >
+                            <Edit3 className="w-4 h-4" />
+                          </button>
+                          <button
+                            // onClick={() => handleDelete(article)}
+                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                            title="Delete article"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Pagination Controls */}
+        <div className="flex justify-end items-center mt-4">
+          <div className="flex rounded-lg px-2 py-1 space-x-2">
+            <button
+              className="px-3 py-1 rounded bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 disabled:opacity-50 flex items-center"
+              disabled={page <= 1}
+              onClick={() => setPage(page - 1)}
+              aria-label="Previous Page"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <span className="px-4 py-1 flex items-center text-lg font-semibold text-gray-900 dark:text-white min-w-[40px] justify-center">
+              {page}
+            </span>
+            <button
+              className="px-3 py-1 rounded bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 disabled:opacity-50 flex items-center"
+              disabled={page >= pages}
+              onClick={() => setPage(page + 1)}
+              aria-label="Next Page"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

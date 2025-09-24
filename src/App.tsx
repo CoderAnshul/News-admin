@@ -33,6 +33,7 @@ import FAQ from "./pages/FAQ"; // Import the FAQ component
 import UserPage from "./pages/User";
 import SubscriptionPlan from "./pages/SubscriptionPlan";
 import ViewAd from "./pages/Ads/ViewAd";
+import Articles from "./pages/Articles";
 
 // RequireAuth component
 function RequireAuth() {
@@ -82,6 +83,8 @@ export default function App() {
               {/* Manage Categories and Locations */}
               <Route path="/categories" element={<Categories />} />
               <Route path="/locations" element={<Locations />} />
+              <Route path="/articles" element={<Articles />} />
+
 
               {/* Advertisements */}
               <Route path="/ads/add" element={<AddAds />} />

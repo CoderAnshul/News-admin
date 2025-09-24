@@ -2,12 +2,14 @@ import { configureStore } from "@reduxjs/toolkit";
 import authReducer from "./authService";
 import categoryReducer from "./category";
 import locationReducer from "./locations";
+import articleReducer from "./articles"; // <-- add this line
 
 const store = configureStore({
   reducer: {
     auth: authReducer,
-    category: categoryReducer, // add this line
+    category: categoryReducer,
     location: locationReducer,
+    article: articleReducer, // <-- add this line
   },
 });
 

@@ -1,4 +1,4 @@
-import { Plus, Trash2, Edit3, Search, MapPin, Globe, X } from "lucide-react";
+import { Plus, Trash2, Edit3, Search, MapPin, Globe, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { useState, FormEvent, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState, AppDispatch } from "../../store/slices/store";
@@ -23,6 +23,7 @@ export default function Locations() {
   const [page, setPage] = useState<number>(1);
   const limit = pagination?.limit || 10;
   const pages = pagination?.pages || 1;
+  const total = pagination?.total || locations.length;
 
   const [showModal, setShowModal] = useState<boolean>(false);
   const [editingLocation, setEditingLocation] = useState<Location | null>(null);
@@ -139,9 +140,47 @@ export default function Locations() {
           </button>
         </div>
 
+          {/* Stats */}
+        <div className="mt-6 grid grid-cols-1 sm:grid-cols-4 gap-4">
+          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
+            <div className="text-2xl font-bold text-gray-900 dark:text-white">
+              {locations.length}
+            </div>
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+              Total Locations
+            </div>
+          </div>
+          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
+            <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+              {locations.filter(loc => loc.status === "active").length}
+            </div>
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+              Active Locations
+            </div>
+          </div>
+          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
+            <div className="text-2xl font-bold text-gray-900 dark:text-white">
+              {new Set(locations.map(loc => loc.region)).size}
+            </div>
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+              Regions Covered
+            </div>
+          </div>
+          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
+            <div className="text-2xl font-bold text-gray-900 dark:text-white">
+              {locations.reduce((sum, loc) => sum + loc.articles, 0)}
+            </div>
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+              Total Articles
+            </div>
+          </div>
+        </div>
+
+
         {/* Search and Filter Bar */}
-        <div className="mb-6 flex flex-col sm:flex-row gap-4">
-          <div className="relative flex-1 max-w-md">
+        <div className="mb-6 flex items-center justify-between mt-10">
+          {/* Search box */}
+          <div className="relative max-w-md flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
               type="text"
@@ -151,13 +190,20 @@ export default function Locations() {
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-800 dark:border-gray-600 dark:text-white"
             />
           </div>
-          <input
+          {/* Total box */}
+          <div className="bg-transparent p-2 w-32 text-center">
+            <div className="text-lg text-gray-600 dark:text-gray-400">
+              Total : <span className="text-lg font-semibold text-gray-900 dark:text-white">{total}</span>
+            </div>
+          </div>
+          {/* Region filter */}
+          {/* <input
             type="text"
             value={filterRegion === "all" ? "" : filterRegion}
             onChange={(e) => setFilterRegion(e.target.value || "all")}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-800 dark:border-gray-600 dark:text-white ml-4"
             placeholder="Filter by region"
-          />
+          /> */}
         </div>
 
         {/* Locations Table */}
@@ -254,39 +300,29 @@ export default function Locations() {
           </div>
         </div>
 
-        {/* Stats */}
-        <div className="mt-6 grid grid-cols-1 sm:grid-cols-4 gap-4">
-          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
-            <div className="text-2xl font-bold text-gray-900 dark:text-white">
-              {locations.length}
-            </div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">
-              Total Locations
-            </div>
-          </div>
-          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
-            <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-              {locations.filter(loc => loc.status === "active").length}
-            </div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">
-              Active Locations
-            </div>
-          </div>
-          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
-            <div className="text-2xl font-bold text-gray-900 dark:text-white">
-              {new Set(locations.map(loc => loc.region)).size}
-            </div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">
-              Regions Covered
-            </div>
-          </div>
-          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
-            <div className="text-2xl font-bold text-gray-900 dark:text-white">
-              {locations.reduce((sum, loc) => sum + loc.articles, 0)}
-            </div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">
-              Total Articles
-            </div>
+      
+        {/* Pagination Controls */}
+        <div className="flex justify-end items-center mt-4">
+          <div className="flex rounded-lg px-2 py-1 space-x-2">
+            <button
+              className="px-3 py-1 rounded bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 disabled:opacity-50 flex items-center"
+              disabled={page <= 1}
+              onClick={() => setPage(page - 1)}
+              aria-label="Previous Page"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <span className="px-4 py-1 flex items-center text-lg font-semibold text-gray-900 dark:text-white min-w-[40px] justify-center">
+              {page}
+            </span>
+            <button
+              className="px-3 py-1 rounded bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 disabled:opacity-50 flex items-center"
+              disabled={page >= pages}
+              onClick={() => setPage(page + 1)}
+              aria-label="Next Page"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </div>
