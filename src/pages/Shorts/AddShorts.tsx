@@ -1,4 +1,7 @@
-import { useState, useRef, ChangeEvent, FormEvent } from 'react';
+import { useState, useRef, ChangeEvent, FormEvent, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { createShort } from '../../../store/slices/shortSlice';
+import { fetchCategories } from '../../../store/slices/category';
 import { Plus, X, Link, Play, Pause, Eye, Upload, Hash } from 'lucide-react';
 
 type LinkType = {
@@ -30,10 +33,15 @@ export default function AddShort() {
   const [tagInput, setTagInput] = useState<string>("");
   const [showTagSuggestions, setShowTagSuggestions] = useState<boolean>(false);
   const [cities, setCities] = useState<string[]>([]); // for city selection
+  const [description, setDescription] = useState<string>("");
+  const [category, setCategory] = useState<string>("");
   
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const mediaInputRef = useRef<HTMLInputElement | null>(null);
   const thumbnailInputRef = useRef<HTMLInputElement | null>(null);
+  const dispatch = useDispatch();
+  const { loading, error } = useSelector((state: any) => state.shorts);
+  const { categories: categoryList, loading: catLoading } = useSelector((state: any) => state.category);
 
   // Predefined tags for suggestions
   const predefinedTags = [
@@ -200,20 +208,67 @@ export default function AddShort() {
     setCities(selected);
   };
 
-  const handleSubmit = (e: FormEvent<HTMLButtonElement>) => {
+  const handleSubmit = async (e: FormEvent<HTMLButtonElement>) => {
     e.preventDefault();
-    // Handle form submission here
-    const formData = {
-      title,
-      slug,
-      tags,
-      mediaFile,
-      thumbnailFile: thumbnailFile || autoThumbnailPreview,
-      links: links.filter(link => link.url.trim() !== ''),
-      cities, // add cities to form data
-    };
-    console.log('Form submitted:', formData);
+    if (!title || !description || !category || !mediaFile) return;
+
+    const formData = new FormData();
+    formData.append("title", title);
+    formData.append("description", description);
+    formData.append("category", category);
+
+    // Tags
+    if (tags.length > 0) formData.append("tags", JSON.stringify(tags));
+
+    // Slug
+    if (slug) formData.append("slug", slug);
+
+    // Related links (array of objects)
+    links.forEach((link, i) => {
+      if (link.url.trim()) {
+        formData.append(`relatedLinks[${i}][url]`, link.url);
+        if (link.title) formData.append(`relatedLinks[${i}][linkTitle]`, link.title);
+      }
+    });
+
+    // Video/Image file
+    if (mediaFile) {
+      formData.append("videoImage", mediaFile);
+    }
+
+    // Thumbnail file
+    if (thumbnailFile) {
+      formData.append("thumbnailImage", thumbnailFile);
+    }
+
+    try {
+      await dispatch(createShort(formData) as any);
+      // Reset form on success
+      setTitle("");
+      setSlug("");
+      setTags([]);
+      setTagInput("");
+      setShowTagSuggestions(false);
+      setMediaFile(null);
+      setMediaPreview(null);
+      setMediaType(null);
+      setThumbnailFile(null);
+      setThumbnailPreview(null);
+      setAutoThumbnailPreview(null);
+      setIsPlaying(false);
+      setDescription("");
+      setCategory("");
+      setLinks([{ url: '', title: '' }]);
+      setCities([]);
+      alert("Short created successfully!");
+    } catch (err) {
+      // Error handled by Redux
+    }
   };
+
+  useEffect(() => {
+    dispatch(fetchCategories({ page: 1, limit: 100 }) as any);
+  }, [dispatch]);
 
   return (
     <div className="min-h-screen ">
@@ -498,9 +553,11 @@ export default function AddShort() {
                 Description <span className="text-blue-600">*</span>
               </label>
               <textarea
-                name="text"
+                name="description"
                 required
                 rows={3}
+                value={description}
+                onChange={e => setDescription(e.target.value)}
                 className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none resize-none"
                 placeholder="Write a compelling description for your short..."
               />
@@ -514,20 +571,34 @@ export default function AddShort() {
               <select
                 name="category"
                 required
+                value={category}
+                onChange={e => setCategory(e.target.value)}
                 className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none bg-white"
               >
                 <option value="">Choose a category</option>
-                <option value="Sports">🏈 Sports</option>
-                <option value="Politics">🏛️ Politics</option>
-                <option value="Business">💼 Business</option>
-                <option value="Entertainment">🎬 Entertainment</option>
-                <option value="Technology">💻 Technology</option>
-                <option value="Lifestyle">🌟 Lifestyle</option>
+                {catLoading ? (
+                  <option disabled>Loading...</option>
+                ) : (
+                  categoryList && categoryList.length > 0
+                    ? categoryList.map((cat: any) => (
+                        <option key={cat._id} value={cat._id}>
+                          {cat.name}
+                        </option>
+                      ))
+                    : <>
+                        <option value="Sports">🏈 Sports</option>
+                        <option value="Politics">🏛️ Politics</option>
+                        <option value="Business">💼 Business</option>
+                        <option value="Entertainment">🎬 Entertainment</option>
+                        <option value="Technology">💻 Technology</option>
+                        <option value="Lifestyle">🌟 Lifestyle</option>
+                      </>
+                )}
               </select>
             </div>
 
             {/* City Location Selector */}
-            <div className="space-y-2">
+            {/* <div className="space-y-2">
               <label className="block text-sm font-semibold text-gray-700">
                 Show In Cities
               </label>
@@ -548,7 +619,7 @@ export default function AddShort() {
               <p className="text-xs text-gray-500">
                 Hold Ctrl (Windows) or Cmd (Mac) to select multiple cities. Select "All Cities" to show everywhere.
               </p>
-            </div>
+            </div> */}
 
             {/* Links Section */}
             <div className="space-y-4">
@@ -605,10 +676,14 @@ export default function AddShort() {
               <button
                 type="submit"
                 onClick={handleSubmit}
-                className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold py-4 px-6 rounded-lg hover:from-blue-700 hover:to-blue-800 transform hover:scale-[1.02] transition-all duration-200 shadow-lg hover:shadow-xl"
+                disabled={loading}
+                className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold py-4 px-6 rounded-lg hover:from-blue-700 hover:to-blue-800 transform hover:scale-[1.02] transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Create Short
+                {loading ? "Creating Short..." : "Create Short"}
               </button>
+              {error && (
+                <div className="mt-4 text-red-600 text-sm font-semibold">{error}</div>
+              )}
             </div>
           </div>
         </div>

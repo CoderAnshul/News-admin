@@ -81,7 +81,7 @@ export default function App() {
               {/* Shorts */}
               <Route path="/shorts/all-shorts" element={<AllShorts />} />
               <Route path="/shorts/add-shorts" element={<AddShorts />} />
-              <Route path="/shorts/edit/" element={<EditShort />} />
+              <Route path="/shorts/edit/:id" element={<EditShort />} />
 
               {/* Manage Categories and Locations */}
               <Route path="/categories" element={<Categories />} />

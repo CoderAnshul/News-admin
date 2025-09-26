@@ -1,67 +1,22 @@
-import { useState, useRef, ChangeEvent, FormEvent } from "react";
+import { useState, useRef, ChangeEvent, FormEvent, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchCategories } from "../../../store/slices/category";
+import { updateShort, fetchShortById } from "../../../store/slices/shortSlice";
+import { useParams } from "react-router-dom";
 import { Plus, X, Link as LinkIcon, Play, Pause, Eye, Upload, Save, Hash } from 'lucide-react';
 
-interface ShortLink {
-  url: string;
-  title: string;
-}
-
-interface Short {
-  id: number;
-  title: string;
-  media: string;
-  text: string;
-  category: string;
-  views: number;
-  type: string;
-  thumbnail: string;
-  links: ShortLink[];
-  slug?: string;
-  tags?: string[];
-}
-
-const shortsData: Short[] = [
-  { 
-    id: 1, 
-    title: "Amazing Mountain Adventure", 
-    media: "https://images.unsplash.com/photo-1506744038136-46273834b3fb", 
-    text: "Exploring the beautiful mountains and their scenic views. This is a longer description to show how it displays in the edit form.", 
-    category: "Sports", 
-    views: 1200,
-    type: "image",
-    thumbnail: "https://images.unsplash.com/photo-1506744038136-46273834b3fb",
-    slug: "amazing-mountain-adventure",
-    tags: ["adventure", "mountain", "travel", "nature"],
-    links: [
-      { url: "https://example.com/mountain-guide", title: "Mountain Guide" },
-      { url: "https://example.com/hiking-tips", title: "Hiking Tips" }
-    ]
-  },
-  { 
-    id: 2, 
-    title: "Political Discussion", 
-    media: "https://images.unsplash.com/photo-1465101046530-73398c7f28ca", 
-    text: "Latest political developments and their impact on society", 
-    category: "Politics", 
-    views: 950,
-    type: "video",
-    thumbnail: "https://images.unsplash.com/photo-1465101046530-73398c7f28ca",
-    links: [
-      { url: "https://example.com/politics", title: "Political News" }
-    ]
-  },
-];
-
 export default function EditShort() {
-  // Always use the first short for demo purposes
-  const short = shortsData[0];
+  const { id } = useParams<{ id: string }>();
+  const dispatch = useDispatch();
+  const { categories: categoryList, loading: catLoading } = useSelector((state: any) => state.category);
+  const { currentShort, loading, error } = useSelector((state: any) => state.shorts);
 
-  const [links, setLinks] = useState<ShortLink[]>(short?.links || [{ url: '', title: '' }]);
+  const [links, setLinks] = useState<ShortLink[]>([{ url: '', title: '' }]);
   const [mediaFile, setMediaFile] = useState<File | null>(null);
-  const [mediaPreview, setMediaPreview] = useState<string | null>(short?.media || null);
-  const [mediaType, setMediaType] = useState<string | null>(short?.type || null);
+  const [mediaPreview, setMediaPreview] = useState<string | null>(null);
+  const [mediaType, setMediaType] = useState<string | null>(null);
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
-  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(short?.thumbnail || null);
+  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
   const [autoThumbnailPreview, setAutoThumbnailPreview] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [form, setForm] = useState<{ 
@@ -70,14 +25,14 @@ export default function EditShort() {
     category: string; 
     slug: string;
   }>({
-    title: short?.title || "",
-    text: short?.text || "",
-    category: short?.category || "",
-    slug: short?.slug || "",
+    title: "",
+    text: "",
+    category: "",
+    slug: "",
   });
 
   // Tags state
-  const [tags, setTags] = useState<string[]>(short?.tags || []);
+  const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState<string>("");
   const [showTagSuggestions, setShowTagSuggestions] = useState<boolean>(false);
 
@@ -237,20 +192,72 @@ export default function EditShort() {
     }));
   };
 
-  const handleSubmit = (e: FormEvent<HTMLButtonElement>) => {
+  // Fetch short from API
+  useEffect(() => {
+    if (id) {
+      dispatch(fetchShortById(id) as any);
+    }
+    dispatch(fetchCategories({ page: 1, limit: 100 }) as any);
+  }, [dispatch, id]);
+
+  // Initialize form state from API data
+  useEffect(() => {
+    if (currentShort) {
+      setForm({
+        title: currentShort.title || "",
+        text: currentShort.description || "",
+        category: typeof currentShort.category === "object" ? currentShort.category._id : currentShort.category || "",
+        slug: currentShort.slug || "",
+      });
+      setTags(currentShort.tags || []);
+      setLinks(
+        currentShort.relatedLinks
+          ? currentShort.relatedLinks.map((l: any) => ({ url: l.url, title: l.linkTitle || "" }))
+          : [{ url: '', title: '' }]
+      );
+      setMediaPreview(currentShort.videoImage ? `${import.meta.env.VITE_IMAGE_URL}/${currentShort.videoImage}` : null);
+      setMediaType(currentShort.videoImage && currentShort.videoImage.match(/\.(mp4|mov)$/i) ? "video" : "image");
+      setThumbnailPreview(currentShort.thumbnailImage ? `${import.meta.env.VITE_IMAGE_URL}/${currentShort.thumbnailImage}` : null);
+    }
+  }, [currentShort]);
+
+  const handleSubmit = async (e: FormEvent<HTMLButtonElement>) => {
     e.preventDefault();
-    // Handle form submission here
-    const formData = {
-      ...form,
-      tags,
-      mediaFile: mediaFile || short.media,
-      thumbnailFile: thumbnailFile || thumbnailPreview,
-      links: links.filter(link => link.url.trim() !== ''),
-    };
-    console.log('Short updated:', formData);
-    alert("Short updated successfully!");
+    if (!form.title || !form.text || !form.category) return;
+
+    const formData = new FormData();
+    formData.append("title", form.title);
+    formData.append("description", form.text);
+    formData.append("category", form.category);
+    formData.append("slug", form.slug);
+
+    if (tags.length > 0) formData.append("tags", JSON.stringify(tags));
+
+    links.forEach((link, i) => {
+      if (link.url.trim()) {
+        formData.append(`relatedLinks[${i}][url]`, link.url);
+        if (link.title) formData.append(`relatedLinks[${i}][linkTitle]`, link.title);
+      }
+    });
+
+    if (mediaFile) {
+      formData.append("videoImage", mediaFile);
+    }
+
+    if (thumbnailFile) {
+      formData.append("thumbnailImage", thumbnailFile);
+    }
+
+    try {
+      // Use id from route params for update
+      await dispatch(updateShort({ id: id as string, data: formData }) as any);
+      alert("Short updated successfully!");
+    } catch (err) {
+      // Error handled by Redux
+    }
   };
 
+  // Tags section
   return (
     <div className="min-h-screen">
       <div className="max-w-full mx-auto">
@@ -265,7 +272,7 @@ export default function EditShort() {
                 </div>
               </div>
               <div className="text-blue-100">
-                ID: {short.id}
+                ID: {currentShort?._id}
               </div>
             </div>
           </div>
@@ -569,12 +576,24 @@ export default function EditShort() {
                 className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none bg-white"
               >
                 <option value="">Choose a category</option>
-                <option value="Sports">🏈 Sports</option>
-                <option value="Politics">🏛️ Politics</option>
-                <option value="Business">💼 Business</option>
-                <option value="Entertainment">🎬 Entertainment</option>
-                <option value="Technology">💻 Technology</option>
-                <option value="Lifestyle">🌟 Lifestyle</option>
+                {catLoading ? (
+                  <option disabled>Loading...</option>
+                ) : (
+                  categoryList && categoryList.length > 0
+                    ? categoryList.map((cat: any) => (
+                        <option key={cat._id} value={cat._id}>
+                          {cat.name}
+                        </option>
+                      ))
+                    : <>
+                        <option value="Sports">🏈 Sports</option>
+                        <option value="Politics">🏛️ Politics</option>
+                        <option value="Business">💼 Business</option>
+                        <option value="Entertainment">🎬 Entertainment</option>
+                        <option value="Technology">💻 Technology</option>
+                        <option value="Lifestyle">🌟 Lifestyle</option>
+                      </>
+                )}
               </select>
             </div>
 

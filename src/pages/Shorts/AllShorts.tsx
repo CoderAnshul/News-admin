@@ -1,91 +1,16 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from "react-router-dom";
+import { useSelector, useDispatch } from "react-redux";
 import { Search, Plus, Edit, Trash2, Eye, Play, Filter, Grid, List } from 'lucide-react';
+import { fetchShorts } from '../../../store/slices/shortSlice';
 
-type ShortType = {
-  id: number;
-  title: string;
-  media: string;
-  text: string;
-  category: string;
-  views: number;
-  type: 'image' | 'video';
-  createdAt: string;
-  status: 'published' | 'draft';
-  slug?: string;
-  tags?: string[];
-};
-
-const shortsData: ShortType[] = [
-  { 
-    id: 1, 
-    title: "Amazing Mountain Adventure", 
-    media: "https://images.unsplash.com/photo-1506744038136-46273834b3fb", 
-    text: "Exploring the beautiful mountains and their scenic views", 
-    category: "Sports", 
-    views: 1200,
-    type: "image",
-    createdAt: "2024-01-15",
-    status: "published",
-    slug: "amazing-mountain-adventure",
-    tags: ["adventure", "mountain", "travel"]
-  },
-  { 
-    id: 2, 
-    title: "Political Discussion", 
-    media: "https://images.unsplash.com/photo-1465101046530-73398c7f28ca", 
-    text: "Latest political developments and their impact", 
-    category: "Politics", 
-    views: 950,
-    type: "video",
-    createdAt: "2024-01-14",
-    status: "published",
-    slug: "political-discussion",
-    tags: ["politics", "news", "discussion"]
-  },
-  { 
-    id: 3, 
-    title: "Business Innovation", 
-    media: "https://images.unsplash.com/photo-1560472354-b33ff0c44a43", 
-    text: "Revolutionary business strategies for modern companies", 
-    category: "Business", 
-    views: 2300,
-    type: "video",
-    createdAt: "2024-01-13",
-    status: "draft",
-    slug: "business-innovation",
-    tags: ["business", "innovation", "strategy"]
-  },
-  { 
-    id: 4, 
-    title: "Entertainment Tonight", 
-    media: "https://images.unsplash.com/photo-1489599510795-b908b6e54c84", 
-    text: "The latest in entertainment and celebrity news", 
-    category: "Entertainment", 
-    views: 1800,
-    type: "image",
-    createdAt: "2024-01-12",
-    status: "published",
-    slug: "entertainment-tonight",
-    tags: ["entertainment", "celebrities", "news"]
-  },
-  { 
-    id: 5, 
-    title: "Tech Revolution", 
-    media: "https://images.unsplash.com/photo-1518709268805-4e9042af2176", 
-    text: "Cutting-edge technology trends and innovations", 
-    category: "Technology", 
-    views: 3200,
-    type: "video",
-    createdAt: "2024-01-11",
-    status: "published",
-    slug: "tech-revolution",
-    tags: ["technology", "innovation", "trends"]
-  }
-];
+const IMAGE_BASE_URL = import.meta.env.VITE_IMAGE_URL || "http://localhost:4000/uploads";
 
 export default function ShortsAll() {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const { shorts, loading, error } = useSelector((state: any) => state.shorts);
+
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -93,11 +18,15 @@ export default function ShortsAll() {
 
   const categories = ['All', 'Sports', 'Politics', 'Business', 'Entertainment', 'Technology'];
 
-  const handleEdit = () => {
-    navigate("/shorts/edit");
+  useEffect(() => {
+    dispatch(fetchShorts({ page: 1, limit: 20 }));
+  }, [dispatch]);
+
+  const handleEdit = (id: string) => {
+    navigate(`/shorts/edit/${id}`);
   };
 
-  const handleDelete = (id: number) => {
+  const handleDelete = (id: string) => {
     if (window.confirm('Are you sure you want to delete this short?')) {
       // Implement delete logic here
       console.log(`Delete short with id: ${id}`);
@@ -108,133 +37,133 @@ export default function ShortsAll() {
     navigate("/shorts/add-shorts");
   };
 
-  const handlePreview = (id: number) => {
+  const handlePreview = (id: string) => {
     navigate(`/shorts/preview/${id}`);
   };
 
-  const filteredShorts = shortsData
-    .filter(short => 
-      short.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      short.text.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredShorts = shorts
+    ?.filter((short: any) =>
+      short.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      short.description?.toLowerCase().includes(searchTerm.toLowerCase())
     )
-    .filter(short => 
+    .filter((short: any) =>
       selectedCategory === '' || selectedCategory === 'All' || short.category === selectedCategory
     )
-    .sort((a, b) => {
+    .sort((a: any, b: any) => {
       switch (sortBy) {
         case 'newest':
           return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
         case 'oldest':
           return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
         case 'views':
-          return b.views - a.views;
+          return (b.views || 0) - (a.views || 0);
         case 'title':
           return a.title.localeCompare(b.title);
         default:
           return 0;
       }
-    });
+    }) || [];
 
   const GridView = () => (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-      {filteredShorts.map((short) => (
-        <div key={short.id} className="rounded-xl border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer" onClick={handleEdit}>
-          <div className="relative">
-            <img 
-              src={short.media} 
-              alt={short.title}
-              className="w-full h-48 object-cover"
-            />
-            {short.type === 'video' && (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="bg-black bg-opacity-60 rounded-full p-3">
-                  <Play className="w-6 h-6 text-white ml-1" />
+      {filteredShorts.map((short: any) => {
+        // Use thumbnailImage and videoImage from API
+        const imgUrl = short.thumbnailImage ? `${IMAGE_BASE_URL}/${short.thumbnailImage}` : `${IMAGE_BASE_URL}/default.jpg`;
+        return (
+          <div key={short._id} className="rounded-xl border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer" onClick={() => handleEdit(short._id)}>
+            <div className="relative">
+              <img
+                src={imgUrl}
+                alt={short.title}
+                className="w-full h-48 object-cover"
+              />
+              {/* Show play icon if videoImage exists */}
+              {short.videoImage && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="bg-black bg-opacity-60 rounded-full p-3">
+                    <Play className="w-6 h-6 text-white ml-1" />
+                  </div>
+                </div>
+              )}
+              <div className="absolute top-3 right-3">
+                <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                  short.status === 'published' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                }`}>
+                  {short.status || 'draft'}
+                </span>
+              </div>
+            </div>
+            <div className="p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded">
+                  {typeof short.category === "object" && short.category !== null
+                    ? short.category.name
+                    : short.category}
+                </span>
+                <span className="text-gray-500 text-sm flex items-center">
+                  <Eye className="w-4 h-4 mr-1" />
+                  {(short.views || 0).toLocaleString()}
+                </span>
+              </div>
+              <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">
+                {short.title}
+              </h3>
+              {/* Slug display */}
+              {short.slug && (
+                <div className="text-xs text-gray-400 font-mono mb-2">
+                  /{short.slug}
+                </div>
+              )}
+              <p className="text-gray-600 text-sm mb-3 line-clamp-2">
+                {short.description}
+              </p>
+              {/* Tags display */}
+              {short.tags && short.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1 mb-3">
+                  {short.tags.slice(0, 3).map((tag: string, index: number) => (
+                    <span
+                      key={index}
+                      className="inline-flex items-center px-2 py-1 rounded text-xs bg-gray-100 text-gray-600"
+                    >
+                      #{tag}
+                    </span>
+                  ))}
+                  {short.tags.length > 3 && (
+                    <span className="text-xs text-gray-500">
+                      +{short.tags.length - 3}
+                    </span>
+                  )}
+                </div>
+              )}
+              <div className="flex items-center justify-between">
+                <span className="text-gray-500 text-xs">
+                  {new Date(short.createdAt).toLocaleDateString()}
+                </span>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handlePreview(short._id); }}
+                    className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                  >
+                    <Eye className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleEdit(short._id); }}
+                    className="p-2 text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all"
+                  >
+                    <Edit className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleDelete(short._id); }}
+                    className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
-            )}
-            <div className="absolute top-3 right-3">
-              <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                short.status === 'published' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
-              }`}>
-                {short.status}
-              </span>
             </div>
           </div>
-          
-          <div className="p-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded">
-                {short.category}
-              </span>
-              <span className="text-gray-500 text-sm flex items-center">
-                <Eye className="w-4 h-4 mr-1" />
-                {short.views.toLocaleString()}
-              </span>
-            </div>
-            
-            <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">
-              {short.title}
-            </h3>
-            
-            {/* Slug display */}
-            {short.slug && (
-              <div className="text-xs text-gray-400 font-mono mb-2">
-                /{short.slug}
-              </div>
-            )}
-            
-            <p className="text-gray-600 text-sm mb-3 line-clamp-2">
-              {short.text}
-            </p>
-            
-            {/* Tags display */}
-            {short.tags && short.tags.length > 0 && (
-              <div className="flex flex-wrap gap-1 mb-3">
-                {short.tags.slice(0, 3).map((tag, index) => (
-                  <span
-                    key={index}
-                    className="inline-flex items-center px-2 py-1 rounded text-xs bg-gray-100 text-gray-600"
-                  >
-                    #{tag}
-                  </span>
-                ))}
-                {short.tags.length > 3 && (
-                  <span className="text-xs text-gray-500">
-                    +{short.tags.length - 3}
-                  </span>
-                )}
-              </div>
-            )}
-            
-            <div className="flex items-center justify-between">
-              <span className="text-gray-500 text-xs">
-                {new Date(short.createdAt).toLocaleDateString()}
-              </span>
-              
-              <div className="flex space-x-2">
-                <button
-                  onClick={(e) => { e.stopPropagation(); handlePreview(short.id); }}
-                  className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
-                >
-                  <Eye className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={(e) => { e.stopPropagation(); handleEdit(); }}
-                  className="p-2 text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all"
-                >
-                  <Edit className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={(e) => { e.stopPropagation(); handleDelete(short.id); }}
-                  className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 
@@ -255,102 +184,109 @@ export default function ShortsAll() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {filteredShorts.map((short) => (
-              <tr key={short.id} className="hover:bg-gray-50 transition-colors cursor-pointer" onClick={handleEdit}>
-                <td className="px-6 py-4">
-                  <div className="relative w-16 h-12">
-                    <img 
-                      src={short.media} 
-                      alt={short.title}
-                      className="w-full h-full object-cover rounded-lg"
-                    />
-                    {short.type === 'video' && (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="bg-black bg-opacity-60 rounded-full p-1">
-                          <Play className="w-3 h-3 text-white" />
+            {filteredShorts.map((short: any) => {
+              // Use thumbnailImage and videoImage from API
+              const imgUrl = short.thumbnailImage ? `${IMAGE_BASE_URL}/${short.thumbnailImage}` : `${IMAGE_BASE_URL}/default.jpg`;
+              return (
+                <tr key={short._id} className="hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => handleEdit(short._id)}>
+                  <td className="px-6 py-4">
+                    <div className="relative w-16 h-12">
+                      <img
+                        src={imgUrl}
+                        alt={short.title}
+                        className="w-full h-full object-cover rounded-lg"
+                      />
+                      {/* Show play icon if videoImage exists */}
+                      {short.videoImage && (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="bg-black bg-opacity-60 rounded-full p-1">
+                            <Play className="w-3 h-3 text-white" />
+                          </div>
                         </div>
-                      </div>
-                    )}
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <div>
-                    <div className="font-medium text-gray-900">{short.title}</div>
-                    {short.slug && (
-                      <div className="text-xs text-gray-400 font-mono">/{short.slug}</div>
-                    )}
-                    <div className="text-sm text-gray-500 truncate max-w-xs">{short.text}</div>
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded">
-                    {short.category}
-                  </span>
-                </td>
-                <td className="px-6 py-4">
-                  {short.tags && short.tags.length > 0 ? (
-                    <div className="flex flex-wrap gap-1 max-w-xs">
-                      {short.tags.slice(0, 2).map((tag, index) => (
-                        <span
-                          key={index}
-                          className="inline-flex items-center px-2 py-1 rounded text-xs bg-gray-100 text-gray-600"
-                        >
-                          #{tag}
-                        </span>
-                      ))}
-                      {short.tags.length > 2 && (
-                        <span className="text-xs text-gray-500">
-                          +{short.tags.length - 2} more
-                        </span>
                       )}
                     </div>
-                  ) : (
-                    <span className="text-gray-400 text-sm">No tags</span>
-                  )}
-                </td>
-                <td className="px-6 py-4 text-gray-900">
-                  <div className="flex items-center">
-                    <Eye className="w-4 h-4 mr-2 text-gray-400" />
-                    {short.views.toLocaleString()}
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                    short.status === 'published' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
-                  }`}>
-                    {short.status}
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-gray-500 text-sm">
-                  {new Date(short.createdAt).toLocaleDateString()}
-                </td>
-                <td className="px-6 py-4">
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={(e) => { e.stopPropagation(); handlePreview(short.id); }}
-                      className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
-                      title="Preview"
-                    >
-                      <Eye className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); handleEdit(); }}
-                      className="p-2 text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all"
-                      title="Edit"
-                    >
-                      <Edit className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); handleDelete(short.id); }}
-                      className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                      title="Delete"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
+                  </td>
+                  <td className="px-6 py-4">
+                    <div>
+                      <div className="font-medium text-gray-900">{short.title}</div>
+                      {short.slug && (
+                        <div className="text-xs text-gray-400 font-mono">/{short.slug}</div>
+                      )}
+                      <div className="text-sm text-gray-500 truncate max-w-xs">{short.description}</div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded">
+                      {typeof short.category === "object" && short.category !== null
+                        ? short.category.name
+                        : short.category}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    {short.tags && short.tags.length > 0 ? (
+                      <div className="flex flex-wrap gap-1 max-w-xs">
+                        {short.tags.slice(0, 2).map((tag, index) => (
+                          <span
+                            key={index}
+                            className="inline-flex items-center px-2 py-1 rounded text-xs bg-gray-100 text-gray-600"
+                          >
+                            #{tag}
+                          </span>
+                        ))}
+                        {short.tags.length > 2 && (
+                          <span className="text-xs text-gray-500">
+                            +{short.tags.length - 2} more
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-gray-400 text-sm">No tags</span>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 text-gray-900">
+                    <div className="flex items-center">
+                      <Eye className="w-4 h-4 mr-2 text-gray-400" />
+                      {(short.views || 0).toLocaleString()}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                      short.status === 'published' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                    }`}>
+                      {short.status}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-gray-500 text-sm">
+                    {new Date(short.createdAt).toLocaleDateString()}
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handlePreview(short._id); }}
+                        className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                        title="Preview"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleEdit(short._id); }}
+                        className="p-2 text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all"
+                        title="Edit"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleDelete(short._id); }}
+                        className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                        title="Delete"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -456,26 +392,37 @@ export default function ShortsAll() {
           </div>
           <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-xl p-6 text-white">
             <div className="text-2xl font-bold">
-              {filteredShorts.filter(s => s.status === 'published').length}
+              {filteredShorts.filter((s: any) => s.status === 'published').length}
             </div>
             <div className="text-green-100">Published</div>
           </div>
           <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-xl p-6 text-white">
             <div className="text-2xl font-bold">
-              {filteredShorts.filter(s => s.status === 'draft').length}
+              {filteredShorts.filter((s: any) => s.status === 'draft').length}
             </div>
             <div className="text-yellow-100">Drafts</div>
           </div>
           <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl p-6 text-white">
             <div className="text-2xl font-bold">
-              {filteredShorts.reduce((sum, short) => sum + short.views, 0).toLocaleString()}
+              {filteredShorts.reduce((sum: number, short: any) => sum + (short.views || 0), 0).toLocaleString()}
             </div>
             <div className="text-purple-100">Total Views</div>
           </div>
         </div>
 
         {/* Content */}
-        {filteredShorts.length === 0 ? (
+        {loading ? (
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-blue-600"></div>
+          </div>
+        ) : error ? (
+          <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-12 text-center">
+            <div className="text-red-400 mb-4">
+              <h3 className="text-xl font-semibold text-red-600 mb-2">Error loading shorts</h3>
+              <p>{error}</p>
+            </div>
+          </div>
+        ) : filteredShorts.length === 0 ? (
           <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-12 text-center">
             <div className="text-gray-400 mb-4">
               <Search className="w-16 h-16 mx-auto mb-4" />

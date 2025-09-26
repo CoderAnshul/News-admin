@@ -13,6 +13,7 @@ interface Category {
   status?: "active" | "inactive";
   createdAt?: string;
   updatedAt?: string;
+  parentId?: string | Category; // <-- add this if you support parent as object
   // ...other fields as needed...
 }
 
@@ -60,8 +61,9 @@ export default function Categories() {
   };
 
   // Get parent category name
-  const getParentCategoryName = (parentId?: string): string => {
+  const getParentCategoryName = (parentId?: string | Category): string => {
     if (!parentId) return "";
+    if (typeof parentId === "object" && parentId !== null) return parentId.name;
     const parent = categories.find(cat => cat._id === parentId);
     return parent ? parent.name : "";
   };

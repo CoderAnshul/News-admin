@@ -80,6 +80,22 @@ export const fetchShorts = createAsyncThunk<
   }
 });
 
+// Fetch single short by ID
+export const fetchShortById = createAsyncThunk<
+  Short,
+  string,
+  { rejectValue: string }
+>("shorts/fetchById", async (id, { rejectWithValue }) => {
+  try {
+    const response = await axiosInstance.get(`${API_BASE_URL}/shorts/${id}`, {
+      headers: getAuthHeader(),
+    });
+    return response.data.data;
+  } catch (err: any) {
+    return rejectWithValue(err.response?.data?.message || err.message);
+  }
+});
+
 // Create a new short (multipart/form-data)
 export const createShort = createAsyncThunk<
   Short,
@@ -99,6 +115,41 @@ export const createShort = createAsyncThunk<
   }
 });
 
+// Update short by ID (multipart/form-data)
+export const updateShort = createAsyncThunk<
+  Short,
+  { id: string; data: FormData },
+  { rejectValue: string }
+>("shorts/update", async ({ id, data }, { rejectWithValue }) => {
+  try {
+    const response = await axiosInstance.put(`${API_BASE_URL}/shorts/${id}`, data, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+        ...getAuthHeader(),
+      },
+    });
+    return response.data.data;
+  } catch (err: any) {
+    return rejectWithValue(err.response?.data?.message || err.message);
+  }
+});
+
+// Delete short by ID
+export const deleteShort = createAsyncThunk<
+  string,
+  string,
+  { rejectValue: string }
+>("shorts/delete", async (id, { rejectWithValue }) => {
+  try {
+    await axiosInstance.delete(`${API_BASE_URL}/shorts/${id}`, {
+      headers: getAuthHeader(),
+    });
+    return id;
+  } catch (err: any) {
+    return rejectWithValue(err.response?.data?.message || err.message);
+  }
+});
+
 // --------------------
 // Slice
 // --------------------
@@ -108,6 +159,9 @@ const shortSlice = createSlice({
   reducers: {
     clearShortError: (state) => {
       state.error = null;
+    },
+    clearCurrentShort: (state) => {
+      state.currentShort = null;
     },
   },
   extraReducers: (builder) => {
@@ -127,6 +181,20 @@ const shortSlice = createSlice({
         state.error = action.payload || "Failed to fetch shorts";
       })
 
+      // Fetch single
+      .addCase(fetchShortById.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchShortById.fulfilled, (state, action) => {
+        state.loading = false;
+        state.currentShort = action.payload;
+      })
+      .addCase(fetchShortById.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || "Failed to fetch short";
+      })
+
       // Create short
       .addCase(createShort.pending, (state) => {
         state.loading = true;
@@ -139,9 +207,45 @@ const shortSlice = createSlice({
       .addCase(createShort.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || "Failed to create short";
+      })
+
+      // Update short
+      .addCase(updateShort.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateShort.fulfilled, (state, action) => {
+        state.loading = false;
+        state.shorts = state.shorts.map((s) =>
+          s._id === action.payload._id ? action.payload : s
+        );
+        if (state.currentShort?._id === action.payload._id) {
+          state.currentShort = action.payload;
+        }
+      })
+      .addCase(updateShort.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || "Failed to update short";
+      })
+
+      // Delete short
+      .addCase(deleteShort.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(deleteShort.fulfilled, (state, action) => {
+        state.loading = false;
+        state.shorts = state.shorts.filter((s) => s._id !== action.payload);
+        if (state.currentShort?._id === action.payload) {
+          state.currentShort = null;
+        }
+      })
+      .addCase(deleteShort.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || "Failed to delete short";
       });
   },
 });
 
-export const { clearShortError } = shortSlice.actions;
+export const { clearShortError, clearCurrentShort } = shortSlice.actions;
 export default shortSlice.reducer;
