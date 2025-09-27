@@ -37,6 +37,10 @@ import ViewAd from "./pages/Ads/ViewAd";
 import AddArticles from "./pages/Article/AddArticles"; // <-- Correct path for add article page
 import Articles from "./pages/Article/Articles";
 import EditArticles from "./pages/Article/EditArticles";
+import AddEpaper from "./pages/epaper/AddEpaper";
+import Advertisement from "./pages/Ads/Advertisement";
+import EditAdvertisement from "./pages/Ads/EditAdvertisement";
+import Subject from "./pages/Subject/Subject";
 
 // RequireAuth component
 function RequireAuth() {
@@ -89,6 +93,9 @@ export default function App() {
               <Route path="/articles" element={<Articles />} />
               <Route path="/articles/add" element={<AddArticles />} />
               <Route path="/articles/edit/:id" element={<EditArticles />} />
+              <Route path="/advertisement" element={<Advertisement />} />
+              <Route path="/advertisement/:id" element={<EditAdvertisement />} />
+              <Route path="/subject" element={<Subject />} />
 
 
               {/* Advertisements */}
