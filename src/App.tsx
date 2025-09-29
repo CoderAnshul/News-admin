@@ -41,6 +41,8 @@ import AddEpaper from "./pages/epaper/AddEpaper";
 import Advertisement from "./pages/Ads/Advertisement";
 import EditAdvertisement from "./pages/Ads/EditAdvertisement";
 import Subject from "./pages/Subject/Subject";
+import State from "./pages/State/State";
+import City from "./pages/State/City";
 
 // RequireAuth component
 function RequireAuth() {
@@ -96,7 +98,8 @@ export default function App() {
               <Route path="/advertisement" element={<Advertisement />} />
               <Route path="/advertisement/:id" element={<EditAdvertisement />} />
               <Route path="/subject" element={<Subject />} />
-
+              <Route path="/state" element={<State />} />
+              <Route path="/city" element={<City />} />
 
               {/* Advertisements */}
               <Route path="/ads/add" element={<AddAds />} />

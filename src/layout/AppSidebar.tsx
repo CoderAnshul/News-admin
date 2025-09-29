@@ -44,6 +44,8 @@ const navItems: NavItem[] = [
       { name: "Manage Locations", path: "/locations" },
       { name: "Manage Articles", path: "/articles" },
       { name: "Subject", path: "/subject" },
+      { name: "State", path: "/state" },
+      { name: "Cities", path: "/city" },
     ],
   },
   {

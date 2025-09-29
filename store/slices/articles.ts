@@ -14,7 +14,13 @@ export interface Article {
   status?: "draft" | "published";
   excerpt?: string;
   content?: string;
-  featuredImage?: string;
+  featuredImages?: string[]; // multiple images
+  coverImage?: string;       // single cover image
+  schedulePublication?: boolean;
+  trendingTopic?: boolean;
+  newsType?: "live" | "top" | "normal";
+  state?: string;
+  city?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -70,6 +76,13 @@ export const fetchArticles = createAsyncThunk<
         ? data.articles.map((a: any) => ({
             ...a,
             status: a.status || "draft",
+            featuredImages: a.featuredImages || [],
+            coverImage: a.coverImage || "",
+            schedulePublication: a.schedulePublication || false,
+            trendingTopic: a.trendingTopic || false,
+            newsType: a.newsType || "normal",
+            state: a.state?._id || a.state || "",
+            city: a.city?._id || a.city || "",
           }))
         : [],
       pagination: data?.pagination || { total: 0, page: 1, pages: 1, limit: 10 },
@@ -80,23 +93,22 @@ export const fetchArticles = createAsyncThunk<
 });
 
 // Create new article
-export const createArticle = createAsyncThunk<
-  Article,
-  FormData,
-  { rejectValue: string }
->("article/create", async (formData, { rejectWithValue }) => {
-  try {
-    const response = await axiosInstance.post(`${API_BASE_URL}/articles`, formData, {
-      headers: {
-        ...getAuthHeader(),
-        "Content-Type": "multipart/form-data",
-      },
-    });
-    return response.data.data as Article;
-  } catch (err: any) {
-    return rejectWithValue(err.response?.data?.message || err.message);
+export const createArticle = createAsyncThunk<Article, FormData, { rejectValue: string }>(
+  "article/create",
+  async (formData, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.post(`${API_BASE_URL}/articles`, formData, {
+        headers: {
+          ...getAuthHeader(),
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      return response.data.data as Article;
+    } catch (err: any) {
+      return rejectWithValue(err.response?.data?.message || err.message);
+    }
   }
-});
+);
 
 // Update article
 export const updateArticle = createAsyncThunk<
@@ -118,20 +130,19 @@ export const updateArticle = createAsyncThunk<
 });
 
 // Delete article
-export const deleteArticle = createAsyncThunk<
-  string,
-  string,
-  { rejectValue: string }
->("article/delete", async (id, { rejectWithValue }) => {
-  try {
-    await axiosInstance.delete(`${API_BASE_URL}/articles/${id}`, {
-      headers: getAuthHeader(),
-    });
-    return id; // return deleted id so we can remove from state
-  } catch (err: any) {
-    return rejectWithValue(err.response?.data?.message || err.message);
+export const deleteArticle = createAsyncThunk<string, string, { rejectValue: string }>(
+  "article/delete",
+  async (id, { rejectWithValue }) => {
+    try {
+      await axiosInstance.delete(`${API_BASE_URL}/articles/${id}`, {
+        headers: getAuthHeader(),
+      });
+      return id; // return deleted id so we can remove from state
+    } catch (err: any) {
+      return rejectWithValue(err.response?.data?.message || err.message);
+    }
   }
-});
+);
 
 /* ========================================================
    Slice

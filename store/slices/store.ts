@@ -6,6 +6,8 @@ import articleReducer from "./articles"; // <-- add this line
 import shortReducer from "./shortSlice"; // <-- add this line
 import epaperReducer from "./epaper";  // <-- add this line
 import advertisementReducer from "./advertisement"; // <-- add this line
+import stateReducer from "./State"; // <-- add this line
+import cityReducer from "./citySlice";
 
 const store = configureStore({
   reducer: {
@@ -16,6 +18,8 @@ const store = configureStore({
     shorts: shortReducer,    // <-- add this line
     epaper: epaperReducer,  // <-- add this line
     advertisement : advertisementReducer, // <-- add this line
+    state: stateReducer, // <-- add this line
+    city: cityReducer, // <-- add this line
   },
 });
 
